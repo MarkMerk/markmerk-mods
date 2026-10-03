@@ -216,6 +216,9 @@ function cellsOf(text, offset, style) {
 // and the ball become shapes, and anything else stays a letter
 function drawingOf(grid, width) {
   const shapes = []
+  // The block characters' quarters, gathered into one path per paint: separate rectangles that
+  // touch show hairline seams when the drawing is scaled, a single path doesn't
+  const blocks = new Map()
   for (const [row, cells] of grid.entries()) {
     for (const [col, cell] of cells.entries()) {
       if (cell === null) continue
@@ -228,9 +231,9 @@ function drawingOf(grid, width) {
       if (quarters !== undefined) {
         for (const [i, isFilled] of quarters.entries()) {
           if (!isFilled) continue
-          shapes.push(
-            `<rect x="${left + (i % 2) * (CELL_W / 2)}" y="${top + Math.floor(i / 2) * (CELL_H / 2)}" width="${CELL_W / 2}" height="${CELL_H / 2}" ${paint}/>`,
-          )
+          const x = left + (i % 2) * (CELL_W / 2)
+          const y = top + Math.floor(i / 2) * (CELL_H / 2)
+          blocks.set(paint, [...(blocks.get(paint) ?? []), `M${x} ${y}h${CELL_W / 2}v${CELL_H / 2}h${-CELL_W / 2}z`])
         }
       } else if (cell.char === '▁') {
         shapes.push(`<rect x="${left}" y="${top + CELL_H - 2}" width="${CELL_W}" height="2" ${paint}/>`)
@@ -249,6 +252,9 @@ function drawingOf(grid, width) {
       }
     }
   }
+  // The blocks go underneath, so the ball and the lines stay on top
+  const paths = [...blocks].map(([paint, parts]) => `<path d="${parts.join('')}" ${paint}/>`)
+  shapes.unshift(...paths)
   const pixels = { width: width * CELL_W, height: grid.length * CELL_H }
   return {
     ...pixels,

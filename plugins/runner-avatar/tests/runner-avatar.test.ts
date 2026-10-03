@@ -123,6 +123,9 @@ test('on the desktop the avatar and the court are drawings', async ($, on) => {
   expect(idle).not.toContain('▐▛███▜▌')
   expect(idle).not.toContain('sprite.js')
   expect(idle).toContain('height=\\"48\\"')
+  // The body is one path, not a rectangle per quarter, so no seams show when it is scaled
+  expect(idle.match(/<path /g)?.length).toBe(1)
+  expect(idle).not.toContain('<rect')
 
   expect((await $.command.run({ command: 'avatar', args: 'tennis' })).text).toBe('game on')
   await ui.redraw()
