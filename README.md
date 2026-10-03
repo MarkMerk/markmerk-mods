@@ -7,11 +7,7 @@ A small [Claude Code](https://claude.com/claude-code) plugin marketplace. It hol
 
 A small Claude avatar lives in the band above your prompt and reacts to what Claude is doing.
 
-```
- ▐▛███▜▌   $ npm test · 42%
-▝▜█████▛▘
-  ▘▘ ▝▝
-```
+![runner-avatar: the avatar runs while Claude works, shows the current tool, celebrates when the turn ends, and plays tennis when idle](assets/runner-avatar.gif)
 
 ### What it does
 
@@ -72,8 +68,10 @@ Nothing is sent anywhere. The full source is in [`plugins/runner-avatar/hooks/`]
 
 ```
 .claude-plugin/marketplace.json     the catalog Claude Code reads
+assets/runner-avatar.gif            the demo above
 plugins/runner-avatar/
 ├── .claude-plugin/plugin.json      name, version, description
+├── README.md                       short readme for the plugin itself
 ├── hooks/hooks.json                points at register.js
 ├── hooks/register.js               moods, tennis, /avatar, chime
 ├── hooks/sprite.js                 draws the avatar and catches clicks
