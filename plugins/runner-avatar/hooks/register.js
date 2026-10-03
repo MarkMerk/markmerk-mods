@@ -6,11 +6,13 @@ const OFFSETS = [1, 0, 2]
 const WIDTH = 9
 const COLOR = '#D97757'
 // The avatar's color once the context window is nearly full, and from which percent
-const HOT_COLOR = '#E5484D'
+const HOT_COLOR = '#FF0000'
 const HOT_PERCENT = 85
 // The second player in a game of tennis, and a subagent's small avatar
 const RIVAL_COLOR = '#6A9BCC'
-const MINI = ['▟█▙', '▙█▟']
+// Two rows: a head with eyes, then arms and legs that alternate like the big one's
+const MINI_HEAD = '▐▜▛▌'
+const MINI_LEGS = ['▀▛▜▀', '▜▀▀▛']
 const MINI_MAX = 3
 // The widest and narrowest tennis scene, in cells: both players and the court between them
 const SCENE_MAX = 2 * WIDTH + 64
@@ -612,8 +614,9 @@ export function register(on) {
 
     const { text, color, dim } = bubble()
     // The subagents' small avatars run beside the big one, at ground level
-    const minis = Array.from({ length: Math.min(agents.size, MINI_MAX) }, () => MINI[frame]).join(' ')
-    const sideWidth = Math.max(text.length, minis.length)
+    const count = Math.min(agents.size, MINI_MAX)
+    const minis = [MINI_HEAD, MINI_LEGS[frame]].map((row) => Array.from({ length: count }, () => row).join(' '))
+    const sideWidth = Math.max(text.length, minis[0].length)
     if (sideWidth === 0) return lift(Box({ marginLeft: left, children: [sprite] }))
 
     // The bubble goes to the right of the avatar, or to its left near the right edge
@@ -628,10 +631,13 @@ export function register(on) {
         text === ''
           ? blank
           : Box({ key: 'bubble', children: [Text({ color, dimColor: dim === true, children: [cut(text)] })] }),
-        blank,
-        minis === ''
-          ? blank
-          : Box({ key: 'minis', children: [Text({ color: COLOR, dimColor: true, children: [cut(minis)] })] }),
+        count === 0
+          ? Box({ flexDirection: 'column', children: [blank, blank] })
+          : Box({
+              key: 'minis',
+              flexDirection: 'column',
+              children: minis.map((row) => Text({ color: spriteColor, children: [cut(row)] })),
+            }),
       ],
     })
     return lift(

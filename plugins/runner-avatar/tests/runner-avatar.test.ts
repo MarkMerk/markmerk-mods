@@ -60,7 +60,7 @@ test('the avatar strolls, then follows a turn from start to finish', async ($, o
   // A subagent's tool call brings its small avatar, and its turn's end takes it away
   await $.tool.call({ tool: 'Bash', command: 'ls', agentId: 'a1' })
   await ui.redraw()
-  expect((await ui.find({ key: 'minis' }))?.text).toContain('█')
+  expect((await ui.find({ key: 'minis' }))?.text).toContain('▐▜▛▌')
   await $.turn.complete({ answer: '', durationMs: 1000, isAborted: false, turnId: 't2', reason: 'answer', agentId: 'a1' })
   await ui.redraw()
   expect(await ui.find({ key: 'minis' })).toBeUndefined()

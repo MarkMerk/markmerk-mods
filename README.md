@@ -17,7 +17,7 @@ A small Claude avatar lives in the band above your prompt and reacts to what Cla
 | You send a prompt | stops and looks up (`!`) |
 | Claude is working | runs, and its bubble shows the current tool: the start of a Bash command, the file being read or edited, `searching`, `browsing`, … plus how full the context window is |
 | A tool call fails or is blocked | flinches (`oops` / `blocked`) |
-| A subagent is working | a small avatar runs beside it (up to three) |
+| A subagent is working | a small copy of it runs alongside (up to three) |
 | The turn ends | does a little dance (`done ✓ 12s`), or shows `stopped` / `error` |
 | The turn took 15 s or longer | plays a short chime, so you can look away while Claude works |
 | Context is 85 % full or more | turns red |

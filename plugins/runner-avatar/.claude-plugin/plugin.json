@@ -1,7 +1,7 @@
 {
   "name": "runner-avatar",
   "displayName": "Runner Avatar",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A small Claude avatar that runs back and forth above the prompt",
   "author": { "name": "MarkMerk" },
   "homepage": "https://github.com/MarkMerk/markmerk-mods#runner-avatar",

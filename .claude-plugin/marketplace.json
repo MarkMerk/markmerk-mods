@@ -9,7 +9,7 @@
       "name": "runner-avatar",
       "source": "./plugins/runner-avatar",
       "description": "A small Claude avatar that runs back and forth above the prompt",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "author": { "name": "MarkMerk" },
       "license": "MIT",
       "keywords": ["avatar", "fun", "status", "ui"]
