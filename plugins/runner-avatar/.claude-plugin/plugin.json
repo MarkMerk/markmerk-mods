@@ -1,0 +1,6 @@
+{
+  "name": "runner-avatar",
+  "version": "0.1.0",
+  "description": "A small Claude avatar that runs back and forth above the prompt",
+  "author": { "name": "MarkMerk" }
+}

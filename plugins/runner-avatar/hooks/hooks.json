@@ -1,0 +1,4 @@
+{
+  "description": "The runner-avatar hooks module",
+  "modules": ["./register.js"]
+}

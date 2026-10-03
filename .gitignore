@@ -1,0 +1,14 @@
+# Types Claude Code generates when it loads a mod
+.claude-plugin/types/
+
+# macOS and editors
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Logs and local env
+*.log
+.env
+.env.*
+node_modules/
