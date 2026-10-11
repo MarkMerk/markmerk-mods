@@ -84,6 +84,13 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(self.request("GET", "/index.js", headers=cross)[0].status, 403)
         self.assertEqual(self.request("HEAD", "/index.js", headers=self.with_token())[0].status, 405)
 
+    def test_the_launcher_may_open_the_page_but_not_fetch_it(self):
+        opened = {"Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Dest": "document"}
+        self.assertEqual(self.request("GET", "/", headers=opened)[0].status, 200)
+        fetched = {"Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "cors", "Sec-Fetch-Dest": "empty"}
+        self.assertEqual(self.request("GET", "/", headers=fetched)[0].status, 403)
+        self.assertEqual(self.request("GET", "/index.js", headers=self.with_token(opened))[0].status, 403)
+
     def test_only_the_state_files_are_served(self):
         for path in ("/../etc/passwd", "/%2e%2e/x", "/inbox/x/1.json", "/decisions/x", "/claims/x", "/uploads/x", "/viewer", "/sessions/../index.js"):
             self.assertIn(self.request("GET", path, headers=self.with_token())[0].status, (403, 404), path)

@@ -174,9 +174,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Content-Security-Policy", policy or "default-src 'none'; frame-ancestors 'none'")
         super().end_headers()
 
-    def is_ours(self):
+    def is_ours(self, is_page=False):
         if self.headers.get("Host", "") != f"127.0.0.1:{port}":
             return False
+        # Opening the page is a navigation from the launcher file, which a browser calls cross-site;
+        # the page holds no secret, so any window may open it, but not embed or fetch it
+        if is_page and self.headers.get("Sec-Fetch-Mode") == "navigate" and self.headers.get("Sec-Fetch-Dest") == "document":
+            return True
         # A browser says where a request comes from; only the page itself may ask
         return self.headers.get("Sec-Fetch-Site") in (None, "same-origin", "none")
 
@@ -215,9 +219,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return self.reply(405)
 
     def do_GET(self):
-        if not self.is_ours():
-            return self.reply(403)
         path = self.path.split("?", 1)[0]
+        if not self.is_ours(is_page=path in ("/", "/index.html")):
+            return self.reply(403)
         if path in ("/", "/index.html"):
             # The page, without the token: it has to claim it with a one-time key
             try:
