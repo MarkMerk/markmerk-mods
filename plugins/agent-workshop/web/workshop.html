@@ -132,20 +132,20 @@
 </head>
 <body>
 <div id="hud">
-  <div id="title"><b>agent workshop</b><span class="dim" id="count"></span><button id="titles" class="chip" style="display:none"></button><button id="help" class="chip" title="Take the tour">?</button></div>
+  <div id="title"><b>agent workshop</b><span class="dim" id="count"></span><button id="titles" class="chip" style="display:none"></button><button id="lang" class="chip" data-t-title="Language: English · Sprache: Deutsch" title="Language: English · Sprache: Deutsch">EN</button><button id="help" class="chip" data-t-title="Take the tour" title="Take the tour">?</button></div>
   <div id="floors"></div>
   <div id="rooms"></div>
 </div>
-<div id="hint">drag to move · right-drag to turn · scroll to zoom · arrows or WASD to walk · click a room to open it</div>
-<div id="offline">waiting for Claude Code…</div>
+<div id="hint" data-t="drag to move · right-drag to turn · scroll to zoom · arrows or WASD to walk · click a room to open it">drag to move · right-drag to turn · scroll to zoom · arrows or WASD to walk · click a room to open it</div>
+<div id="offline" data-t="waiting for Claude Code…">waiting for Claude Code…</div>
 <div id="panel"></div>
-<div id="placing"><span id="placing-text"></span><button class="button" id="placing-cancel">Cancel</button></div>
+<div id="placing"><span id="placing-text"></span><button class="button" id="placing-cancel" data-t="Cancel">Cancel</button></div>
 <div id="tours" class="menu"></div>
-<div id="tour"><div class="step" id="tour-step"></div><h3 id="tour-title"></h3><p id="tour-text"></p><div class="row"><label class="note row skip" id="tour-never"><input type="checkbox" id="tour-never-box">Don't show this again</label><button class="button" id="tour-skip">Close</button><button class="button" id="tour-back">Back</button><button class="button primary" id="tour-next">Next</button></div></div>
+<div id="tour"><div class="step" id="tour-step"></div><h3 id="tour-title"></h3><p id="tour-text"></p><div class="row"><label class="note row skip" id="tour-never"><input type="checkbox" id="tour-never-box"><span data-t="Don't show this again">Don't show this again</span></label><button class="button" id="tour-skip" data-t="Close">Close</button><button class="button" id="tour-back" data-t="Back">Back</button><button class="button primary" id="tour-next">Next</button></div></div>
 <div id="confirm">
-  <b>Turn titles on?</b>
-  <div class="note">At the start of every turn, in every session, its prompt goes to Haiku for a 3–6 word title on the room's sign. That is one small extra request a turn, and it costs tokens.</div>
-  <div class="row"><button class="button primary" id="confirm-on">Turn on</button><button class="button" id="confirm-off">Cancel</button></div>
+  <b data-t="Turn titles on?">Turn titles on?</b>
+  <div class="note" data-t="At the start of every turn, in every session, its prompt goes to Haiku for a 3–6 word title on the room's sign. That is one small extra request a turn, and it costs tokens.">At the start of every turn, in every session, its prompt goes to Haiku for a 3–6 word title on the room's sign. That is one small extra request a turn, and it costs tokens.</div>
+  <div class="row"><button class="button primary" id="confirm-on" data-t="Turn on">Turn on</button><button class="button" id="confirm-off" data-t="Cancel">Cancel</button></div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" integrity="sha384-wagZhIFgY4hD+7awjQjR4e2E294y6J2HSnd8eTNc15ZubTeQeVRZwhQJ+W6hnBsf" crossorigin="anonymous"></script>
@@ -183,6 +183,159 @@ async function claimToken() {
     }
   }
   CAN_SEND = /^[0-9a-f]{64}$/.test(TOKEN)
+}
+
+// The window's words in German, by their English; `{name}` marks a part filled in. What is not
+// here stays English. The terminal side keeps its own list, in hooks/words.js
+const GERMAN = {
+  'Language: English · Sprache: Deutsch': 'Sprache: Deutsch · Language: English',
+  'Take the tour': 'Zur Tour',
+  'drag to move · right-drag to turn · scroll to zoom · arrows or WASD to walk · click a room to open it': 'Ziehen zum Bewegen · Rechtsziehen zum Drehen · Scrollen zum Zoomen · Pfeiltasten oder WASD zum Gehen · Klick auf einen Raum öffnet ihn',
+  'waiting for Claude Code…': 'Warte auf Claude Code…',
+  'This window has no key to the sessions. Open it again with /workshop 3d in a Claude Code session.': 'Dieses Fenster hat keinen Schlüssel zu den Sitzungen. Öffne es erneut mit /workshop 3d in einer Claude-Code-Sitzung.',
+  Cancel: 'Abbrechen',
+  "Don't show this again": 'Nicht mehr anzeigen',
+  Close: 'Schließen',
+  Back: 'Zurück',
+  Next: 'Weiter',
+  Done: 'Fertig',
+  'Turn titles on?': 'Titel einschalten?',
+  "At the start of every turn, in every session, its prompt goes to Haiku for a 3–6 word title on the room's sign. That is one small extra request a turn, and it costs tokens.": 'Zu Beginn jedes Turns geht in jeder Sitzung der Prompt an Haiku, für einen Titel aus 3–6 Wörtern auf dem Schild des Raums. Das ist eine kleine zusätzliche Anfrage pro Turn und kostet Tokens.',
+  'Turn on': 'Einschalten',
+  lift: 'Aufzug',
+  '+ new session': '+ neue Sitzung',
+  east: 'Ost',
+  west: 'West',
+  north: 'Nord',
+  south: 'Süd',
+  'one side': 'eine Seite',
+  'the other side': 'andere Seite',
+  '{floor} · {arm} corridor, {side}, room {n}': '{floor} · Flur {arm}, {side}, Raum {n}',
+  'move here': 'hierher',
+  here: 'hier',
+  'this room': 'dieser Raum',
+  'Pick where {name} moves to: any dashed room, on any floor (floor buttons at the top).': 'Wähle, wohin {name} zieht: jeder gestrichelte Raum, auf jeder Etage (Etagen-Knöpfe oben).',
+  'Pick a spot for the new session: any dashed room, on any floor (floor buttons at the top).': 'Wähle einen Platz für die neue Sitzung: jeder gestrichelte Raum, auf jeder Etage (Etagen-Knöpfe oben).',
+  bye: 'tschüss',
+  '👁 guest': '👁 Gast',
+  session: 'Sitzung',
+  sessions: 'Sitzungen',
+  agent: 'Agent',
+  agents: 'Agenten',
+  titles: 'Titel',
+  on: 'an',
+  off: 'aus',
+  'the workshop refused it ({code})': 'die Werkstatt hat abgelehnt ({code})',
+  'the upload was refused ({code})': 'der Upload wurde abgelehnt ({code})',
+  'No recent projects yet.': 'Noch keine letzten Projekte.',
+  'starting Claude Code in {dir}…': 'starte Claude Code in {dir}…',
+  'Choose another spot…': 'Anderen Platz wählen…',
+  'Choose folder…': 'Ordner wählen…',
+  'pick a folder in the dialog that opens; a Terminal starts Claude Code there': 'wähle im Dialog einen Ordner; ein Terminal startet dort Claude Code',
+  '/path/to/a/folder': '/pfad/zu/einem/ordner',
+  Start: 'Starten',
+  'New session': 'Neue Sitzung',
+  'A Terminal window opens running Claude Code in the folder; its room appears here once it starts. macOS.': 'Ein Terminal-Fenster öffnet sich mit Claude Code im Ordner; sein Raum erscheint hier, sobald es läuft. macOS.',
+  'Continue the last conversation in that folder': 'Letzte Unterhaltung in diesem Ordner fortsetzen',
+  'Recent projects': 'Letzte Projekte',
+  'Or a folder': 'Oder ein Ordner',
+  'Change the model': 'Modell wechseln',
+  'Permission mode': 'Berechtigungsmodus',
+  'other… (/model)': 'anderes… (/model)',
+  'Move this room': 'Diesen Raum verschieben',
+  'End this session': 'Diese Sitzung beenden',
+  'End session': 'Sitzung beenden',
+  'Saying goodbye…': 'Verabschiedet sich…',
+  'End {name}?': '{name} beenden?',
+  'It is working right now; its turn will be stopped. ': 'Sie arbeitet gerade; ihr Turn wird gestoppt. ',
+  'Claude says goodbye, then exits in its terminal, as /exit does. The conversation stays on disk, so claude --continue there picks it up again.': 'Claude verabschiedet sich und beendet sich dann in seinem Terminal, wie mit /exit. Die Unterhaltung bleibt gespeichert; mit claude --continue geht es dort weiter.',
+  Agents: 'Agenten',
+  'Tool calls': 'Tool-Aufrufe',
+  Hooks: 'Hooks',
+  Chat: 'Chat',
+  Edits: 'Änderungen',
+  Activity: 'Aktivität',
+  'Message {name}…   / for commands, @ for files, paste or drop to attach': 'Nachricht an {name}…   / für Befehle, @ für Dateien, einfügen oder ablegen zum Anhängen',
+  'Attach files': 'Dateien anhängen',
+  Send: 'Senden',
+  Stop: 'Stopp',
+  'built-in': 'eingebaut',
+  plugin: 'Plugin',
+  'plugin · {name}': 'Plugin · {name}',
+  yours: 'deine',
+  'pasted image': 'eingefügtes Bild',
+  '{command} sent ✓': '{command} gesendet ✓',
+  'sent ✓': 'gesendet ✓',
+  denied: 'abgelehnt',
+  'not sent: {error} (try again, or answer in the terminal)': 'nicht gesendet: {error} (nochmal versuchen oder im Terminal antworten)',
+  '+{n} more waiting after this one': '+{n} weitere warten danach',
+  ' asks you': ' fragt dich',
+  Answer: 'Antworten',
+  ' has a plan ready': ' hat einen Plan fertig',
+  'The plan is shown in the terminal.': 'Der Plan wird im Terminal angezeigt.',
+  Approve: 'Genehmigen',
+  'Approve + accept edits': 'Genehmigen + Änderungen annehmen',
+  'Keep planning': 'Weiter planen',
+  ' wants to use ': ' möchte ',
+  'file: ': 'Datei: ',
+  'Always allow would add: ': '„Immer erlauben“ würde hinzufügen: ',
+  Allow: 'Erlauben',
+  'Always allow': 'Immer erlauben',
+  'Allow + accept edits': 'Erlauben + Änderungen annehmen',
+  Deny: 'Ablehnen',
+  'Too long to show whole here.': 'Zu lang, um es hier ganz zu zeigen.',
+  'It holds characters that hide or reorder text (shown as ⟨U+…⟩).': 'Es enthält Zeichen, die Text verstecken oder umordnen (als ⟨U+…⟩ gezeigt).',
+  'It would run outside the sandbox.': 'Es würde außerhalb der Sandbox laufen.',
+  ' Here it can only be denied; read it, and allow it if you want, in the terminal.': ' Hier kann es nur abgelehnt werden; lies es und erlaube es, wenn du willst, im Terminal.',
+  model: 'Modell',
+  'This session cannot take commands yet.': 'Diese Sitzung kann noch keine Befehle annehmen.',
+  'This window can only watch: open it with /workshop 3d where python3 is available to send commands.': 'Dieses Fenster kann nur zuschauen: Öffne es mit /workshop 3d dort, wo python3 verfügbar ist, um Befehle zu senden.',
+  '👁 A guest, to watch': '👁 Ein Gast, zum Zuschauen',
+  'This session started before the workshop was set up, so it runs without the mod: the window reads its transcript, but cannot prompt it, stop it or answer for it.': 'Diese Sitzung startete, bevor die Werkstatt eingerichtet war, und läuft daher ohne den Mod: Das Fenster liest ihr Protokoll, kann ihr aber keine Prompts schicken, sie nicht stoppen und nicht für sie antworten.',
+  'To use it from here, restart it in its folder with ': 'Um sie von hier zu nutzen, starte sie in ihrem Ordner neu mit ',
+  ' (the same conversation), or try ': ' (dieselbe Unterhaltung), oder probiere ',
+  ' in it.': ' darin.',
+  '{n} s, then the terminal asks': '{n} s, dann fragt das Terminal',
+  'from the window': 'aus dem Fenster',
+  'thinking…': 'denkt nach…',
+  'writing…': 'schreibt…',
+  'working…': 'arbeitet…',
+  'No messages yet.': 'Noch keine Nachrichten.',
+  'No edits yet.': 'Noch keine Änderungen.',
+  idle: 'untätig',
+  'session ending…': 'Sitzung endet…',
+  'bye 👋': 'tschüss 👋',
+  shell: 'Shell',
+  files: 'Dateien',
+  edit: 'Bearbeiten',
+  web: 'Web',
+  mcp: 'MCP',
+  outside: 'draußen',
+  '📤 to {name}': '📤 an {name}',
+  '📨 from {name}': '📨 von {name}',
+  'an example; nothing is asked': 'ein Beispiel; nichts wird gefragt',
+  'Show the main tour when the window opens': 'Haupttour beim Öffnen des Fensters zeigen',
+  'Which test runner should I use?': 'Welchen Test-Runner soll ich nehmen?',
+  Tests: 'Tests',
+  '## Plan\n1. Find where the host is checked\n2. Compare it with the port\n3. Run the tests': '## Plan\n1. Finden, wo der Host geprüft wird\n2. Ihn mit dem Port vergleichen\n3. Die Tests ausführen',
+}
+// The language: English or German. The sessions' shared settings say which (the terminal's
+// /workshop lang sets them too); until they are read, or opened as a file, this browser's last
+// choice, else the language it speaks
+let LANG = 'en'
+try {
+  const kept = localStorage.getItem('workshop-lang')
+  LANG = kept === 'de' || kept === 'en' ? kept : /^de\b/i.test(navigator.language ?? '') ? 'de' : 'en'
+} catch {
+  LANG = /^de\b/i.test(navigator.language ?? '') ? 'de' : 'en'
+}
+function t(text, vars = {}) {
+  const said = LANG === 'de' ? (GERMAN[text] ?? text) : text
+  return said.replace(/\{(\w+)\}/g, (all, name) => (name in vars ? String(vars[name]) : all))
+}
+// A count with its word: "1 session", "3 sessions"
+function counted(n, word) {
+  return n + ' ' + t(n === 1 ? word : word + 's')
 }
 
 // A room's size, the wall between two rooms, the corridors, and the height of a floor
@@ -508,6 +661,7 @@ function placeOf(i) {
   }
 }
 function levelName(level) {
+  if (LANG === 'de') return level === 0 ? 'EG' : level > 0 ? `${level}. OG` : `${-level}. UG`
   return level >= 0 ? `${level + 1}F` : `B${-level}`
 }
 
@@ -584,7 +738,7 @@ function buildHalls(places) {
       const post = block(0.12, FLOOR_H, 0.12, METAL, Math.sin(angle) * 1.15, -0.3, Math.cos(angle) * 1.15)
       g.add(post)
     }
-    const sign = label('lift · ' + levelName(level), { size: 36, scale: 0.013, background: 'rgba(36, 34, 43, 0.9)' })
+    const sign = label(t('lift') + ' · ' + levelName(level), { size: 36, scale: 0.013, background: 'rgba(36, 34, 43, 0.9)' })
     sign.position.y = 3.9
     g.add(shaft, sign)
     // Stairs up in one corner, rising toward the floor above; stairs down in the other, into the
@@ -707,7 +861,7 @@ function buildRoom(slot, isGuest = false) {
     const station = MAKERS[id]()
     station.position.set(x, 0, isBack ? 0.65 : 6.5)
     g.add(station)
-    const name = label(id, { color: '#8b8b96', size: 30 })
+    const name = label(t(id), { color: '#8b8b96', size: 30 })
     name.position.set(x, 0.22, isBack ? 1.45 : 7.6)
     g.add(name)
     stations[id] = { group: station, x, isBack, label: name, isBusy: false }
@@ -800,7 +954,7 @@ function placeFrontier() {
   if (key === frontierKey) return
   frontierKey = key
   for (const one of frontier) removeThing(one.group)
-  frontier = slots.map((slot) => outlineRoom(slot, '+ new session', 0x8b8b96))
+  frontier = slots.map((slot) => outlineRoom(slot, t('+ new session'), 0x8b8b96))
   ghost = frontier[0] ?? null
 }
 
@@ -816,7 +970,7 @@ function describeSlot(slot) {
   const place = placeOf(slot)
   const r = slot % PER_FLOOR
   const side = r % (PER_SIDE * 2) < PER_SIDE ? 'one side' : 'the other side'
-  return levelName(place.level) + ' · ' + ARM_NAMES[place.arm] + ' corridor, ' + side + ', room ' + (place.pos + 1)
+  return t('{floor} · {arm} corridor, {side}, room {n}', { floor: levelName(place.level), arm: t(ARM_NAMES[place.arm]), side: t(side), n: place.pos + 1 })
 }
 function outlineRoom(slot, text, color) {
   const place = placeOf(slot)
@@ -841,7 +995,7 @@ function drawPlacing() {
   for (let slot = first; slot < first + PER_FLOOR; slot++) {
     if (isTaken(slot, placing.id)) continue
     if (placing.purpose === 'move' && rooms.get(placing.id)?.slot === slot) continue
-    placing.ghosts.push(outlineRoom(slot, placing.purpose === 'move' ? 'move here' : 'here', 0xd97757))
+    placing.ghosts.push(outlineRoom(slot, t(placing.purpose === 'move' ? 'move here' : 'here'), 0xd97757))
   }
   frontierKey = ''
   syncRooms()
@@ -849,14 +1003,18 @@ function drawPlacing() {
 function startPlacing(purpose, id = null) {
   closePanel()
   placing = { purpose, id, ghosts: [] }
-  document.getElementById('placing-text').textContent =
-    purpose === 'move' ? 'Pick where ' + (states.get(id)?.project ?? 'this room') + ' moves to: any dashed room, on any floor (floor buttons at the top).' : 'Pick a spot for the new session: any dashed room, on any floor (floor buttons at the top).'
+  placingText()
   document.getElementById('placing').classList.add('open')
   chipsKey = ''
   drawPlacing()
   // Back a little, to see the whole floor
   const target = new THREE.Vector3(0, currentLevel * FLOOR_H, 0)
   flight = { fromTarget: controls.target.clone(), fromPosition: camera.position.clone(), target, position: target.clone().add(new THREE.Vector3(0, 42, 34)), t: 0 }
+}
+function placingText() {
+  const { purpose, id } = placing
+  document.getElementById('placing-text').textContent =
+    purpose === 'move' ? t('Pick where {name} moves to: any dashed room, on any floor (floor buttons at the top).', { name: states.get(id)?.project ?? t('this room') }) : t('Pick a spot for the new session: any dashed room, on any floor (floor buttons at the top).')
 }
 function stopPlacing() {
   if (!placing) return
@@ -1042,7 +1200,7 @@ function apply(room, state) {
     if (!seen.has(agent.id) && !agent.gone) {
       agent.gone = true
       agent.state = { ...agent.state, station: null, calls: 0 }
-      setBubble(agent, 'bye', null)
+      setBubble(agent, t('bye'), null)
     }
   }
   // A new answer: the main agent carries a sheet to the tray, where it lands on the pile
@@ -1070,7 +1228,7 @@ function apply(room, state) {
       room.group.remove(room.sign)
       dispose(room.sign)
     }
-    const name = plain((state.guest ? '👁 guest · ' : '') + (state.title ? state.project + ' — ' + state.title : state.project))
+    const name = plain((state.guest ? t('👁 guest') + ' · ' : '') + (state.title ? state.project + ' — ' + state.title : state.project))
     room.sign = label(name, { size: 44, scale: 0.012, background: state.guest ? 'rgba(30, 64, 72, 0.92)' : 'rgba(36, 34, 43, 0.9)', dot: '#' + lampColor.toString(16).padStart(6, '0') })
     room.sign.position.set(W / 2, WALL + 0.7, 0)
     room.group.add(room.sign)
@@ -1122,8 +1280,11 @@ function startReading() {
   setInterval(() => listed.forEach((id) => load('sessions/' + id + '.js')), 300)
   load('index.js')
   readSettings()
+  setInterval(readSettings, 4000)
   if (location.protocol === 'http:' && !CAN_SEND) {
-    document.getElementById('offline').textContent = 'This window has no key to the sessions. Open it again with /workshop 3d in a Claude Code session.'
+    const offline = document.getElementById('offline')
+    offline.dataset.t = 'This window has no key to the sessions. Open it again with /workshop 3d in a Claude Code session.'
+    offline.textContent = t(offline.dataset.t)
   }
 }
 
@@ -1251,7 +1412,7 @@ function renderChips(live) {
   showNotices(live)
   watchMail(live)
   const agentCount = live.reduce((sum, state) => sum + state.agents.length, 0)
-  document.getElementById('count').textContent = `· ${live.length} session${live.length === 1 ? '' : 's'} · ${agentCount} agent${agentCount === 1 ? '' : 's'}`
+  document.getElementById('count').textContent = '· ' + counted(live.length, 'session') + ' · ' + counted(agentCount, 'agent')
   let usedLevels = [...new Set([...rooms.values()].map((room) => room.place.level))]
   // Every floor in use shows, the one in view, and one more above and below, empty or not
   {
@@ -1276,7 +1437,7 @@ function renderChips(live) {
   document.getElementById('rooms').replaceChildren(
     ...live.map((state) => {
       const chip = el('button', { className: 'chip' + (selected === state.id ? ' focused' : '') }, el('span', { className: 'dot ' + statusOf(state) }), el('span', { textContent: plain(state.project) }))
-      if (state.guest) chip.append(el('span', { className: 'tag', textContent: '👁 guest' }))
+      if (state.guest) chip.append(el('span', { className: 'tag', textContent: t('👁 guest') }))
       if (state.title) chip.append(el('span', { className: 'dim', textContent: plain(state.title) }))
       const room = rooms.get(state.id)
       if ([...rooms.values()].some((other) => other.place.level !== 0) && room) chip.append(el('span', { className: 'tag', textContent: levelName(room.place.level) }))
@@ -1298,7 +1459,7 @@ function renderTitlesToggle(live) {
   const isOn = live.some((state) => state.titlesOn)
   const able = CAN_SEND && live.some((state) => state.canControl)
   toggle.style.display = able ? '' : 'none'
-  const text = 'titles: ' + (isOn ? 'on' : 'off')
+  const text = t('titles') + ': ' + t(isOn ? 'on' : 'off')
   if (toggle.textContent !== text) toggle.textContent = text
   toggle.onclick = () => {
     if (isOn) send({ session: '_window', type: 'set-titles', on: false }).catch(() => {})
@@ -1472,7 +1633,7 @@ async function send(command) {
     headers: { 'Content-Type': 'application/json', 'X-Workshop-Token': TOKEN },
     body: JSON.stringify(command),
   })
-  if (!response.ok) throw new Error('the workshop refused it (' + response.status + ')')
+  if (!response.ok) throw new Error(t('the workshop refused it ({code})', { code: response.status }))
 }
 async function upload(file) {
   const response = await fetch('/upload?session=' + encodeURIComponent(selected) + '&name=' + encodeURIComponent(file.name || 'pasted.png'), {
@@ -1480,7 +1641,7 @@ async function upload(file) {
     headers: { 'X-Workshop-Token': TOKEN },
     body: file,
   })
-  if (!response.ok) throw new Error('the upload was refused (' + response.status + ')')
+  if (!response.ok) throw new Error(t('the upload was refused ({code})', { code: response.status }))
   return (await response.json()).path
 }
 function openPanel(id) {
@@ -1517,7 +1678,7 @@ window.workshopProjects = (list) => {
   if (selected === 'new' && parts.projects) parts.projects.replaceChildren(...projectButtons())
 }
 function projectButtons() {
-  if (projects.length === 0) return [el('div', { className: 'note', textContent: 'No recent projects yet.' })]
+  if (projects.length === 0) return [el('div', { className: 'note', textContent: t('No recent projects yet.') })]
   return projects.map((project) => {
     const button = el('button', { className: 'item', title: project.dir }, el('span', { textContent: plain(project.dir.split('/').filter(Boolean).pop() ?? '/') }), el('span', { className: 'dim', textContent: plain(project.dir.replace(/^\/Users\/[^/]+/, '~')) }))
     button.onclick = () => startIn(project.dir)
@@ -1527,7 +1688,7 @@ function projectButtons() {
 async function startIn(dir) {
   const spot = newSlot ?? ghost?.slot ?? freeSlot()
   parts.status.className = 'note'
-  parts.status.textContent = 'starting Claude Code in ' + dir + '…'
+  parts.status.textContent = t('starting Claude Code in {dir}…', { dir })
   try {
     await send({ session: '_window', type: 'new-session', dir, isContinue: parts.keepGoing.checked, slot: spot })
     reserved.set(spot, Date.now())
@@ -1539,43 +1700,43 @@ async function startIn(dir) {
 
 function buildNewSession(close) {
   const spot = newSlot ?? ghost?.slot ?? freeSlot()
-  const elsewhere = el('button', { className: 'button', textContent: 'Choose another spot…' })
+  const elsewhere = el('button', { className: 'button', textContent: t('Choose another spot…') })
   elsewhere.onclick = () => startPlacing('new')
   parts.status = el('span', { className: 'note' })
   parts.keepGoing = el('input', { type: 'checkbox' })
-  const choose = el('button', { className: 'button primary', textContent: 'Choose folder…' })
+  const choose = el('button', { className: 'button primary', textContent: t('Choose folder…') })
   choose.onclick = async () => {
     choose.disabled = true
     try {
       await send({ session: '_window', type: 'pick-folder', isContinue: parts.keepGoing.checked, slot: spot })
       reserved.set(spot, Date.now())
       parts.status.className = 'note'
-      parts.status.textContent = 'pick a folder in the dialog that opens; a Terminal starts Claude Code there'
+      parts.status.textContent = t('pick a folder in the dialog that opens; a Terminal starts Claude Code there')
     } catch (error) {
       parts.status.className = 'failed'
       parts.status.textContent = error.message
     }
     setTimeout(() => (choose.disabled = false), 3000)
   }
-  const path = el('input', { type: 'text', placeholder: '/path/to/a/folder' })
-  const go = el('button', { className: 'button', textContent: 'Start' })
+  const path = el('input', { type: 'text', placeholder: t('/path/to/a/folder') })
+  const go = el('button', { className: 'button', textContent: t('Start') })
   go.onclick = () => path.value.trim() && startIn(path.value.trim())
   path.addEventListener('keydown', (event) => event.key === 'Enter' && go.click())
   parts.projects = el('div', { className: 'menu small projects' }, ...projectButtons())
   load('projects.js')
   panel.append(
     el('div', { className: 'top' },
-      el('h2', {}, el('span', { textContent: 'New session' }), close),
-      el('div', { className: 'note', textContent: 'A Terminal window opens running Claude Code in the folder; its room appears here once it starts. macOS.' }),
+      el('h2', {}, el('span', { textContent: t('New session') }), close),
+      el('div', { className: 'note', textContent: t('A Terminal window opens running Claude Code in the folder; its room appears here once it starts. macOS.') }),
       el('div', { className: 'row wrap' }, el('span', { className: 'pill', textContent: describeSlot(spot) }), elsewhere),
-      el('label', { className: 'row note' }, parts.keepGoing, 'Continue the last conversation in that folder'),
+      el('label', { className: 'row note' }, parts.keepGoing, t('Continue the last conversation in that folder')),
       el('div', { className: 'row' }, choose),
       parts.status,
     ),
     el('div', { className: 'scroll' },
-      el('h3', { textContent: 'Recent projects' }),
+      el('h3', { textContent: t('Recent projects') }),
       parts.projects,
-      el('h3', { textContent: 'Or a folder', style: 'margin-top:12px' }),
+      el('h3', { textContent: t('Or a folder'), style: 'margin-top:12px' }),
       el('div', { className: 'row' }, path, go),
     ),
   )
@@ -1584,7 +1745,7 @@ function buildNewSession(close) {
 function buildPanel() {
   panel.replaceChildren()
   parts = { keys: {} }
-  const close = el('button', { id: 'close', textContent: '×', title: 'Close' })
+  const close = el('button', { id: 'close', textContent: '×', title: t('Close') })
   close.onclick = closePanel
   if (selected === 'new') return buildNewSession(close)
   const state = states.get(selected)
@@ -1592,8 +1753,8 @@ function buildPanel() {
 
   // The header: how the session is, its model (click to change it) and its permission mode
   parts.dot = el('span', { className: 'dot' })
-  parts.model = el('button', { className: 'pill', title: 'Change the model' })
-  parts.mode = el('span', { className: 'pill dim', title: 'Permission mode' })
+  parts.model = el('button', { className: 'pill', title: t('Change the model') })
+  parts.mode = el('span', { className: 'pill dim', title: t('Permission mode') })
   parts.modelMenu = el('div', { className: 'menu small' })
   parts.modelMenu.hidden = true
   parts.model.onclick = () => (parts.modelMenu.hidden = !parts.modelMenu.hidden)
@@ -1605,7 +1766,7 @@ function buildPanel() {
     }
     parts.modelMenu.append(item)
   }
-  const other = el('button', { className: 'item dim', textContent: 'other… (/model)' })
+  const other = el('button', { className: 'item dim', textContent: t('other… (/model)') })
   other.onclick = () => {
     parts.modelMenu.hidden = true
     parts.prompt.value = '/model '
@@ -1613,24 +1774,24 @@ function buildPanel() {
     updateMenu()
   }
   parts.modelMenu.append(other)
-  parts.move = el('button', { id: 'move', textContent: '⇄', title: 'Move this room' })
+  parts.move = el('button', { id: 'move', textContent: '⇄', title: t('Move this room') })
   parts.move.onclick = () => startPlacing('move', selected)
-  parts.end = el('button', { id: 'end', textContent: '⏻', title: 'End this session' })
+  parts.end = el('button', { id: 'end', textContent: '⏻', title: t('End this session') })
   parts.confirm = el('div')
   parts.end.onclick = () => {
     const working = states.get(selected)?.isWorking
-    const yes = el('button', { className: 'button deny', textContent: 'End session' })
-    const no = el('button', { className: 'button', textContent: 'Cancel' })
+    const yes = el('button', { className: 'button deny', textContent: t('End session') })
+    const no = el('button', { className: 'button', textContent: t('Cancel') })
     no.onclick = () => parts.confirm.replaceChildren()
     yes.onclick = async () => {
       yes.disabled = no.disabled = true
       await send({ session: selected, type: 'end' }).catch((error) => (parts.sent.textContent = error.message))
-      parts.confirm.replaceChildren(el('div', { className: 'note', textContent: 'Saying goodbye…' }))
+      parts.confirm.replaceChildren(el('div', { className: 'note', textContent: t('Saying goodbye…') }))
     }
     parts.confirm.replaceChildren(
       el('div', { className: 'confirm' },
-        el('b', { textContent: 'End ' + state.project + '?' }),
-        el('div', { className: 'note', textContent: (working ? 'It is working right now; its turn will be stopped. ' : '') + 'Claude says goodbye, then exits in its terminal, as /exit does. The conversation stays on disk, so claude --continue there picks it up again.' }),
+        el('b', { textContent: t('End {name}?', { name: plain(state.project) }) }),
+        el('div', { className: 'note', textContent: (working ? t('It is working right now; its turn will be stopped. ') : '') + t('Claude says goodbye, then exits in its terminal, as /exit does. The conversation stays on disk, so claude --continue there picks it up again.') }),
         el('div', { className: 'row' }, yes, no),
       ),
     )
@@ -1648,10 +1809,10 @@ function buildPanel() {
   const pages = {
     chat: parts.chat,
     edits: parts.edits,
-    activity: el('div', {}, el('h3', { textContent: 'Agents' }), parts.agents, el('h3', { textContent: 'Tool calls', style: 'margin-top:12px' }), parts.calls, el('h3', { textContent: 'Hooks', style: 'margin-top:12px' }), parts.hooks),
+    activity: el('div', {}, el('h3', { textContent: t('Agents') }), parts.agents, el('h3', { textContent: t('Tool calls'), style: 'margin-top:12px' }), parts.calls, el('h3', { textContent: t('Hooks'), style: 'margin-top:12px' }), parts.hooks),
   }
   const tabs = Object.keys(pages).map((name) => {
-    const tab = el('button', { className: 'tab', textContent: name[0].toUpperCase() + name.slice(1) })
+    const tab = el('button', { className: 'tab', textContent: t(name[0].toUpperCase() + name.slice(1)) })
     tab.onclick = () => showTab(name)
     return tab
   })
@@ -1665,17 +1826,17 @@ function buildPanel() {
   parts.scroll = el('div', { className: 'scroll' }, ...Object.values(pages))
 
   // The composer
-  parts.prompt = el('textarea', { placeholder: 'Message ' + state.project + '…   / for commands, @ for files, paste or drop to attach' })
+  parts.prompt = el('textarea', { placeholder: t('Message {name}…   / for commands, @ for files, paste or drop to attach', { name: plain(state.project) }) })
   parts.menu = el('div', { className: 'menu' })
   parts.menu.hidden = true
   parts.attached = el('div', { className: 'row wrap' })
   parts.files = []
   parts.picker = el('input', { type: 'file', multiple: true, hidden: true })
-  const attach = el('button', { className: 'button', textContent: '📎', title: 'Attach files' })
+  const attach = el('button', { className: 'button', textContent: '📎', title: t('Attach files') })
   attach.onclick = () => parts.picker.click()
   parts.picker.onchange = () => attachFiles([...parts.picker.files])
-  parts.send = el('button', { className: 'button primary', textContent: 'Send' })
-  parts.stop = el('button', { className: 'button', textContent: 'Stop' })
+  parts.send = el('button', { className: 'button primary', textContent: t('Send') })
+  parts.stop = el('button', { className: 'button', textContent: t('Stop') })
   parts.sent = el('span', { className: 'note' })
   parts.watchOnly = el('div', { className: 'note' })
   parts.send.onclick = sendComposer
@@ -1746,9 +1907,9 @@ function updateMenu() {
 // Where a slash command comes from, as a short tag: Claude Code's own, a plugin's (named), the
 // user's or project's own, or an MCP server's prompt
 function sourceTag(command) {
-  if (command.source === 'builtin') return 'built-in'
-  if (command.source === 'plugin') return command.plugin ? 'plugin · ' + command.plugin : 'plugin'
-  if (command.source === 'user') return 'yours'
+  if (command.source === 'builtin') return t('built-in')
+  if (command.source === 'plugin') return command.plugin ? t('plugin · {name}', { name: command.plugin }) : t('plugin')
+  if (command.source === 'user') return t('yours')
   if (command.source === 'mcp') return 'mcp'
   return ''
 }
@@ -1797,12 +1958,12 @@ function composerKeys(event) {
 }
 async function attachFiles(files) {
   for (const file of files) {
-    const chip = el('span', { className: 'pill', textContent: '⇡ ' + (file.name || 'pasted image') })
+    const chip = el('span', { className: 'pill', textContent: '⇡ ' + (file.name || t('pasted image')) })
     parts.attached.append(chip)
     try {
       const path = await upload(file)
       parts.files.push(path)
-      chip.textContent = '📎 ' + (file.name || 'pasted image')
+      chip.textContent = '📎 ' + (file.name || t('pasted image'))
       chip.title = path
     } catch (error) {
       chip.className = 'pill failed'
@@ -1833,11 +1994,11 @@ async function sendComposer() {
     const command = commandIn(text)
     if (command && parts.files.length === 0) {
       await send({ session: selected, type: 'command', command: command[1], args: command[2].trim() })
-      parts.sent.textContent = '/' + command[1] + ' sent ✓'
+      parts.sent.textContent = t('{command} sent ✓', { command: '/' + command[1] })
     } else {
       const attached = parts.files.length === 0 ? '' : '\n\nAttached files (read them): ' + parts.files.join(', ')
       await send({ session: selected, type: 'prompt', text: text + attached })
-      parts.sent.textContent = 'sent ✓'
+      parts.sent.textContent = t('sent ✓')
     }
     parts.sent.className = 'sent'
     parts.prompt.value = ''
@@ -1925,11 +2086,11 @@ function askCard(state, ask, able) {
     for (const button of buttons) button.disabled = true
     try {
       await send({ session: selected, type: 'permission', id: ask.id, decision, ...extra })
-      parts.countdown.textContent = decision === 'allow' ? 'sent ✓' : 'denied'
+      parts.countdown.textContent = t(decision === 'allow' ? 'sent ✓' : 'denied')
       parts.countdown.dataset.done = '1'
     } catch (error) {
       // Not sent: say so, and let the person try again
-      parts.countdown.textContent = 'not sent: ' + error.message + ' (try again, or answer in the terminal)'
+      parts.countdown.textContent = t('not sent: {error} (try again, or answer in the terminal)', { error: error.message })
       parts.countdown.dataset.done = '1'
       for (const button of buttons) button.disabled = !able || (button.classList.contains('allow') && blocked.length > 0)
     }
@@ -1947,10 +2108,10 @@ function askCard(state, ask, able) {
   parts.countdown = el('span', { className: 'note' })
   const body = []
   const buttons = []
-  if (ask.waiting > 0) body.push(el('div', { className: 'note', textContent: '+' + ask.waiting + ' more waiting after this one' }))
+  if (ask.waiting > 0) body.push(el('div', { className: 'note', textContent: t('+{n} more waiting after this one', { n: ask.waiting }) }))
   if (ask.tool === 'AskUserQuestion' && ask.questions) {
     const chosen = {}
-    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), ' asks you'))
+    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), t(' asks you')))
     for (const question of ask.questions) {
       chosen[question.question] = new Set()
       const options = el('div', { className: 'row wrap' })
@@ -1968,20 +2129,20 @@ function askCard(state, ask, able) {
       }
       body.push(el('div', { className: 'question' }, el('div', { className: 'heading', textContent: plain(question.header) }), el('div', { textContent: plain(question.question) }), options))
     }
-    buttons.push(button('Answer', 'allow', () => answer('allow', { answers: Object.fromEntries(Object.entries(chosen).filter(([, picked]) => picked.size > 0).map(([q, picked]) => [q, [...picked].join(', ')])) })()))
+    buttons.push(button(t('Answer'), 'allow', () => answer('allow', { answers: Object.fromEntries(Object.entries(chosen).filter(([, picked]) => picked.size > 0).map(([q, picked]) => [q, [...picked].join(', ')])) })()))
   } else if (ask.tool === 'ExitPlanMode') {
-    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), ' has a plan ready'))
+    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), t(' has a plan ready')))
     if (ask.plan) {
       const seen = reveal(ask.plan)
       if (seen.hasHidden) blocked.push('hidden')
       body.push(el('div', { className: 'plan' }, markdown(seen.text)))
-    } else body.push(el('div', { className: 'note', textContent: 'The plan is shown in the terminal.' }))
-    buttons.push(button('Approve', 'allow', answer('allow')), button('Approve + accept edits', 'allow', answer('allow', { mode: 'acceptEdits' })), button('Keep planning', 'deny', answer('deny')))
+    } else body.push(el('div', { className: 'note', textContent: t('The plan is shown in the terminal.') }))
+    buttons.push(button(t('Approve'), 'allow', answer('allow')), button(t('Approve + accept edits'), 'allow', answer('allow', { mode: 'acceptEdits' })), button(t('Keep planning'), 'deny', answer('deny')))
   } else {
-    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), ' wants to use ', el('b', { textContent: plain(ask.tool) })))
+    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), t(' wants to use '), el('b', { textContent: plain(ask.tool) }), LANG === 'de' ? ' verwenden' : ''))
     // What the tool will really do: the file, the command with its flags, the edit's diff, or
     // its whole input
-    if (ask.filePath) body.push(el('div', { className: 'path' }, 'file: ', el('b', { textContent: plain(ask.filePath) })))
+    if (ask.filePath) body.push(el('div', { className: 'path' }, t('file: '), el('b', { textContent: plain(ask.filePath) })))
     if (ask.command) body.push(shown(ask.command))
     for (const flag of ask.flags ?? []) body.push(el('div', { className: flag.startsWith('dangerouslyDisableSandbox') ? 'failed' : 'note', textContent: plain(flag) }))
     if (ask.diff) {
@@ -1989,17 +2150,17 @@ function askCard(state, ask, able) {
       if (seen.hasHidden) blocked.push('hidden')
       body.push(diffBlock(seen.text))
     } else if (ask.detail) body.push(shown(ask.detail, 'input'))
-    if (ask.canAlways && ask.rules?.length) body.push(el('div', { className: 'note' }, 'Always allow would add: ', ...ask.rules.map((rule) => el('div', { className: 'rule', textContent: plain(rule) }))))
+    if (ask.canAlways && ask.rules?.length) body.push(el('div', { className: 'note' }, t('Always allow would add: '), ...ask.rules.map((rule) => el('div', { className: 'rule', textContent: plain(rule) }))))
     const allow = (text, extra) => button(text, 'allow', answer('allow', extra))
-    buttons.push(allow('Allow'))
-    if (ask.canAlways) buttons.push(allow('Always allow', { always: true }))
-    if (ask.canAcceptEdits && EDIT_TOOLS.includes(ask.tool) && state.permissionMode === 'default') buttons.push(allow('Allow + accept edits', { mode: 'acceptEdits' }))
-    buttons.push(button('Deny', 'deny', answer('deny')))
+    buttons.push(allow(t('Allow')))
+    if (ask.canAlways) buttons.push(allow(t('Always allow'), { always: true }))
+    if (ask.canAcceptEdits && EDIT_TOOLS.includes(ask.tool) && state.permissionMode === 'default') buttons.push(allow(t('Allow + accept edits'), { mode: 'acceptEdits' }))
+    buttons.push(button(t('Deny'), 'deny', answer('deny')))
   }
   if (ask.isCut) blocked.push('cut')
   if (ask.leavesSandbox) blocked.push('sandbox')
-  const why = { cut: 'Too long to show whole here.', hidden: 'It holds characters that hide or reorder text (shown as ⟨U+…⟩).', sandbox: 'It would run outside the sandbox.' }
-  if (blocked.length > 0) body.push(el('div', { className: 'failed', textContent: blocked.map((one) => why[one]).join(' ') + ' Here it can only be denied; read it, and allow it if you want, in the terminal.' }))
+  const why = { cut: t('Too long to show whole here.'), hidden: t('It holds characters that hide or reorder text (shown as ⟨U+…⟩).'), sandbox: t('It would run outside the sandbox.') }
+  if (blocked.length > 0) body.push(el('div', { className: 'failed', textContent: blocked.map((one) => why[one]).join(' ') + t(' Here it can only be denied; read it, and allow it if you want, in the terminal.') }))
   const card = el('div', { className: 'ask' }, ...body, el('div', { className: 'row wrap' }, ...buttons), parts.countdown)
   // A new card waits a moment before taking clicks, so a click meant for the one before it
   // never lands on it
@@ -2015,7 +2176,7 @@ function updatePanel() {
   if (!state) return
   const able = canControl(state)
   parts.dot.className = 'dot ' + statusOf(state)
-  parts.model.textContent = (state.model ?? 'model') + ' ▾'
+  parts.model.textContent = (state.model ?? t('model')) + ' ▾'
   parts.model.disabled = !able
   parts.end.disabled = !able || state.isEnding === true
   parts.move.disabled = !able
@@ -2024,14 +2185,14 @@ function updatePanel() {
   parts.prompt.disabled = !able
   parts.send.disabled = !able || parts.sending === true
   parts.stop.disabled = !able || !state.isWorking
-  if (!state.guest) parts.watchOnly.textContent = able ? '' : CAN_SEND ? 'This session cannot take commands yet.' : 'This window can only watch: open it with /workshop 3d where python3 is available to send commands.'
+  if (!state.guest) parts.watchOnly.textContent = able ? '' : t(CAN_SEND ? 'This session cannot take commands yet.' : 'This window can only watch: open it with /workshop 3d where python3 is available to send commands.')
   // A guest: to watch only, and how to make it a room of its own
   if (state.guest && !parts.watchOnly.querySelector('.guest-note')) {
     parts.watchOnly.replaceChildren(
       el('div', { className: 'guest-note' },
-        el('b', { textContent: '👁 A guest, to watch' }),
-        el('div', { textContent: 'This session started before the workshop was set up, so it runs without the mod: the window reads its transcript, but cannot prompt it, stop it or answer for it.' }),
-        el('div', {}, 'To use it from here, restart it in its folder with ', el('code', { textContent: 'claude --continue' }), ' (the same conversation), or try ', el('code', { textContent: '/reload-plugins' }), ' in it.'),
+        el('b', { textContent: t('👁 A guest, to watch') }),
+        el('div', { textContent: t('This session started before the workshop was set up, so it runs without the mod: the window reads its transcript, but cannot prompt it, stop it or answer for it.') }),
+        el('div', {}, t('To use it from here, restart it in its folder with '), el('code', { textContent: 'claude --continue' }), t(' (the same conversation), or try '), el('code', { textContent: '/reload-plugins' }), t(' in it.')),
       ),
     )
   }
@@ -2042,7 +2203,7 @@ function updatePanel() {
   const ask = state.permission
   refill('ask', ask ? ask.id : '', () => (ask ? [askCard(state, ask, able)] : []))
   if (ask && parts.countdown && !parts.countdown.dataset.done) {
-    parts.countdown.textContent = Math.max(0, Math.round((ask.until - Date.now()) / 1000)) + ' s, then the terminal asks'
+    parts.countdown.textContent = t('{n} s, then the terminal asks', { n: Math.max(0, Math.round((ask.until - Date.now()) / 1000)) })
   }
 
   // The todo list, as the model last wrote it
@@ -2081,7 +2242,7 @@ function updatePanel() {
         if (message.kind === 'notice') rows.push(el('div', { className: 'msg notice', textContent: '⚙ ' + message.text }))
         else if (message.kind === 'command') rows.push(el('div', { className: 'msg notice', textContent: '› ' + message.text }))
         else if (message.kind === 'output') rows.push(el('div', { className: 'msg notice output', textContent: message.text }))
-        else rows.push(el('div', { className: 'msg user' }, message.isFromWindow ? el('div', { className: 'tag', textContent: 'from the window' }) : null, el('div', { textContent: message.text })))
+        else rows.push(el('div', { className: 'msg user' }, message.isFromWindow ? el('div', { className: 'tag', textContent: t('from the window') }) : null, el('div', { textContent: message.text })))
       } else {
         const tools = message.tools.length === 0 ? null : el('div', { className: 'tools' }, ...message.tools.map((use) => el('span', { className: 'pill', textContent: use.tool + (use.label && use.label !== use.tool ? ' · ' + use.label : '') })))
         if (!message.text.trim() && !tools) continue
@@ -2092,11 +2253,11 @@ function updatePanel() {
       rows.push(el('div', { className: 'msg command' }, el('div', { className: 'tag', textContent: clock(entry.at) + ' · ' + entry.command }), entry.text ? el('div', { className: 'note', textContent: entry.text }) : null))
     }
     if (state.isWorking) {
-      if (main?.isThinking) rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: 'thinking…' }), el('div', { className: 'thinking', textContent: live.thinking.slice(-600) })))
-      else if (live.text.trim()) rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: 'writing…' }), markdown(live.text)))
-      else rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: 'working…' })))
+      if (main?.isThinking) rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: t('thinking…') }), el('div', { className: 'thinking', textContent: live.thinking.slice(-600) })))
+      else if (live.text.trim()) rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: t('writing…') }), markdown(live.text)))
+      else rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: t('working…') })))
     }
-    if (rows.length === 0) rows.push(el('div', { className: 'note', textContent: 'No messages yet.' }))
+    if (rows.length === 0) rows.push(el('div', { className: 'note', textContent: t('No messages yet.') }))
     return rows
   })
   if (changed && atBottom) parts.scroll.scrollTop = parts.scroll.scrollHeight
@@ -2104,12 +2265,12 @@ function updatePanel() {
   if (more) {
     refill('edits', 'e' + more.version, () =>
       more.edits.length === 0
-        ? [el('div', { className: 'note', textContent: 'No edits yet.' })]
+        ? [el('div', { className: 'note', textContent: t('No edits yet.') })]
         : [...more.edits].reverse().flatMap((edit) => [el('div', { className: 'heading', textContent: clock(edit.at) + ' · ' + edit.file }), diffBlock(edit.diff)]),
     )
   }
   refill('agents', JSON.stringify(state.agents.map((one) => [one.name, one.station, one.bubble])), () =>
-    state.agents.map((one) => el('div', { className: 'line' }, el('span', { textContent: '●', style: 'color:' + (/^#[0-9a-f]{6}$/i.test(one.color) ? one.color : '#8b8b96') }), el('span', { textContent: one.name }), el('span', { className: 'dim', textContent: one.station ?? 'idle' }), el('span', { textContent: one.bubble || '' }))),
+    state.agents.map((one) => el('div', { className: 'line' }, el('span', { textContent: '●', style: 'color:' + (/^#[0-9a-f]{6}$/i.test(one.color) ? one.color : '#8b8b96') }), el('span', { textContent: one.name }), el('span', { className: 'dim', textContent: t(one.station ?? 'idle') }), el('span', { textContent: one.bubble || '' }))),
   )
   refill('calls', JSON.stringify(state.recentCalls), () =>
     [...(state.recentCalls ?? [])].reverse().map((call) => el('div', { className: 'line' }, el('span', { className: 'dim', textContent: clock(call.at) }), el('span', { className: call.result, textContent: call.tool }), el('span', { textContent: call.label }))),
@@ -2212,16 +2373,16 @@ function drawScreen(room, state, t) {
   let lines
   if (state.isEnding) {
     ctx.fillStyle = '#c8f7d0'
-    lines = ['session ending…', 'bye 👋']
+    lines = [t('session ending…'), t('bye 👋')]
   } else if (isThinking) {
     ctx.fillStyle = '#8b8b96'
-    lines = ['thinking…', ...tailLines(live.thinking.replace(/\s+/g, ' '), 58, 4)]
+    lines = [t('thinking…'), ...tailLines(live.thinking.replace(/\s+/g, ' '), 58, 4)]
   } else if (live.text.trim() !== '') {
     ctx.fillStyle = '#c8f7d0'
     lines = tailLines(live.text, 58, 5)
   } else {
     ctx.fillStyle = '#5f7a66'
-    lines = [state.isWorking ? 'working…' : 'idle', ...(state.title ? [state.title] : [])]
+    lines = [t(state.isWorking ? 'working…' : 'idle'), ...(state.title ? [state.title] : [])]
   }
   lines.forEach((line, i) => ctx.fillText(line, 22, 14 + i * 34))
   if (cursor && !isThinking) {
@@ -2296,7 +2457,7 @@ const TOURS = {
       { title: 'Talk to a session', text: 'Click a room to open its panel: the chat, a box to prompt it (<kbd>/</kbd> for its slash commands, <kbd>@</kbd> for files, paste or drop to attach), the model, <b>Stop</b>, its edits and activity.', focus: 'room', openPanel: true },
       { title: 'Answer from here', text: 'Permission requests show up in the panel with <b>Allow</b>, <b>Always allow</b>, <b>Allow + accept edits</b> and <b>Deny</b>; plans and Claude\'s questions too. The window has a little while to answer, then the terminal asks.', focus: 'room', openPanel: true, demo: 'permission' },
       { title: 'Start, place and end sessions', text: 'The dashed room starts a new session in a folder you pick, wherever you like. <b>⇄</b> in a panel moves a room; <b>⏻</b> ends a session: Claude waves goodbye, and the room folds away.', focus: 'ghost' },
-      { title: 'That is it', text: 'The <b>?</b> menu has this tour and shorter ones on each part. <b>titles</b> at the top names each turn with Haiku (it costs tokens, so it is off by default). Session state stays on this machine; the window loads its 3D and text libraries from a CDN.', focus: null },
+      { title: 'That is it', text: 'The <b>?</b> menu has this tour and shorter ones on each part. <b>titles</b> at the top names each turn with Haiku (it costs tokens, so it is off by default). <b>EN</b>/<b>DE</b> switches the language. Session state stays on this machine; the window loads its 3D and text libraries from a CDN.', focus: null },
     ],
   },
   panel: {
@@ -2369,15 +2530,119 @@ const TOURS = {
     name: 'In the terminal',
     steps: [
       { title: 'The pane', text: '<kbd>/workshop</kbd> in any session opens a pane with its own room in pixel art, the same agents at the same stations.', focus: null },
-      { title: 'Commands', text: '<kbd>/workshop hooks</kbd> the hook table, <kbd>/workshop 3d</kbd> this window, <kbd>/workshop 3d off</kbd> to stop it, <kbd>/workshop auto</kbd> to open the pane with every session, <kbd>/workshop help</kbd> for all of them.', focus: null },
+      { title: 'Commands', text: '<kbd>/workshop hooks</kbd> the hook table, <kbd>/workshop 3d</kbd> this window, <kbd>/workshop 3d off</kbd> to stop it, <kbd>/workshop auto</kbd> to open the pane with every session, <kbd>/workshop lang de</kbd> or <kbd>lang en</kbd> for the language, <kbd>/workshop help</kbd> for all of them.', focus: null },
     ],
   },
+}
+// The tours in German: each one's name, and its steps' titles and texts in order
+const TOURS_GERMAN = {
+  main: {
+    name: 'Die Werkstatt in einer Minute',
+    steps: [
+      ['Willkommen in der Agenten-Werkstatt', 'Jede Claude-Code-Sitzung mit diesem Mod hat hier einen Raum, in jedem Projekt. Räume säumen einen Flur, Flure treffen sich in einer Halle, und mit mehr Sitzungen stapeln sich die Etagen.'],
+      ['Sich bewegen', 'Ziehen zum Bewegen, Rechtsziehen zum Drehen, Scrollen zum Zoomen, <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> oder die Pfeiltasten zum Gehen. Ein Klick auf einen Chip oben oder auf einen Raum fliegt dorthin.'],
+      ['Ein Raum, eine Sitzung', 'Das Schild nennt das Projekt (und mit Titeln, woran es gerade arbeitet). Die Lampe über der Tür ist <b>grün</b>, solange sie arbeitet, <b>gelb</b>, solange sie auf dich wartet, grau im Leerlauf. Lange genug untätig, macht Claude ein Nickerchen auf dem Teppich.'],
+      ['Stationen sind Tools', 'Claude geht zur Station jedes Tools, das es aufruft: <b>Shell</b> für Bash, <b>Dateien</b> zum Lesen und Suchen, <b>Bearbeiten</b> für Änderungen, <b>Web</b>, <b>MCP</b> für MCP-Tools und der runde Tisch für <b>Agenten</b>.'],
+      ['Subagenten nehmen die Tür', 'Jeder Subagent kommt als kleinerer Claude in eigener Farbe durch die Tür, arbeitet an seinen Stationen und geht denselben Weg, wenn er fertig ist.'],
+      ['Beim Denken und Schreiben zusehen', 'Der Bildschirm an der Rückwand zeigt die Antwort, während sie entsteht. Eine Gedankenwolke schwebt über einem Agenten, solange er nachdenkt.'],
+      ['Antworten, Änderungen, Kontext', 'Fertige Antworten stapeln sich als Blätter in der Ablage an der Tür. Nach einer Änderung hängt ihr Diff über dem Schreibtisch. Der Kolben füllt sich mit dem Kontextfenster und zeigt, was die Sitzung gekostet hat.'],
+      ['Mit einer Sitzung reden', 'Ein Klick auf einen Raum öffnet sein Panel: der Chat, ein Feld für Prompts (<kbd>/</kbd> für Slash-Befehle, <kbd>@</kbd> für Dateien, einfügen oder ablegen zum Anhängen), das Modell, <b>Stopp</b>, die Änderungen und die Aktivität.'],
+      ['Von hier antworten', 'Berechtigungsanfragen erscheinen im Panel mit <b>Erlauben</b>, <b>Immer erlauben</b>, <b>Erlauben + Änderungen annehmen</b> und <b>Ablehnen</b>; Pläne und Claudes Fragen ebenso. Das Fenster hat eine Weile Zeit zu antworten, dann fragt das Terminal.'],
+      ['Sitzungen starten, platzieren und beenden', 'Der gestrichelte Raum startet eine neue Sitzung in einem Ordner deiner Wahl, wo du willst. <b>⇄</b> im Panel verschiebt einen Raum; <b>⏻</b> beendet eine Sitzung: Claude winkt zum Abschied, und der Raum klappt zusammen.'],
+      ['Das war’s', 'Das <b>?</b>-Menü hat diese Tour und kürzere zu jedem Teil. <b>Titel</b> oben lässt Haiku jeden Turn benennen (das kostet Tokens, daher ist es aus). <b>EN</b>/<b>DE</b> wechselt die Sprache. Der Zustand der Sitzungen bleibt auf diesem Rechner; das Fenster lädt seine 3D- und Textbibliotheken von einem CDN.'],
+    ],
+  },
+  panel: {
+    name: 'Mit einer Sitzung reden',
+    steps: [
+      ['Das Panel', 'Ein Klick auf einen Raum öffnet sein Panel. Oben: wie es der Sitzung geht, ihr Projekt und Ordner und woran sie arbeitet.'],
+      ['Modell und Modus', 'Der Modell-Chip wechselt das Modell der Sitzung (er führt dort <kbd>/model</kbd> aus). Daneben der Berechtigungsmodus der Sitzung.'],
+      ['Prompts schicken', 'Tippen und <kbd>Enter</kbd>: Der Prompt geht sofort an diese Sitzung und startet, sobald sie frei ist. <kbd>Shift</kbd>+<kbd>Enter</kbd> für eine neue Zeile.'],
+      ['Stopp', '<b>Stopp</b> beendet den laufenden Turn der Sitzung, wie <kbd>Esc</kbd> in ihrem Terminal.'],
+      ['Chat', 'Die Unterhaltung: deine Prompts, Claudes Antworten mit den benutzten Tools und darunter, was es gerade schreibt. Hinweise von Claude Code selbst erscheinen als kurze graue Zeilen.'],
+      ['Änderungen und Aktivität', '<b>Änderungen</b> hat den Diff jeder Änderung. <b>Aktivität</b> listet die Agenten, die letzten Tool-Aufrufe und die Hook-Ereignisse. Die To-do-Liste steht über den Tabs, solange Claude eine führt.'],
+    ],
+  },
+  commands: {
+    name: 'Slash-Befehle, Dateien und Anhänge',
+    steps: [
+      ['Slash-Befehle', 'Tippe <kbd>/</kbd> ins Prompt-Feld: Das Menü listet die Befehle und Skills der Sitzung, markiert nach Herkunft. Mit den Pfeilen und <kbd>Tab</kbd> wählen; es läuft, als wäre es im Terminal getippt.'],
+      ['Befehle mit eigenem Bildschirm', 'Ein Befehl mit eigener Oberfläche wie <kbd>/config</kbd> öffnet sie im Terminal der Sitzung. Mit einem Argument wirken die meisten sofort: <kbd>/model sonnet</kbd>, <kbd>/compact behalte den Plan</kbd>, <kbd>/plan</kbd>.'],
+      ['Dateien mit @', 'Tippe <kbd>@</kbd> und einen Teil des Namens für ein Menü der Projektdateien; der Pfad kommt in den Prompt, damit Claude die Datei liest.'],
+      ['Anhänge', 'Füge ein Bild ein, lege Dateien auf dem Panel ab oder nutze die Büroklammer. Sie werden auf diesem Rechner gespeichert, und ihre Pfade gehen mit dem Prompt.'],
+    ],
+  },
+  permissions: {
+    name: 'Berechtigungen, Pläne und Fragen',
+    steps: [
+      ['Eine Berechtigungsanfrage', 'Wenn eine Sitzung fragt, wird ihre Lampe gelb, und ihr Panel zeigt, was sie tun will: den Befehl oder den Diff der Änderung.'],
+      ['Die Antworten', '<b>Erlauben</b> einmal; <b>Immer erlauben</b> fügt die Regel hinzu, die das Terminal anbieten würde; <b>Erlauben + Änderungen annehmen</b> schaltet die Sitzung zusätzlich auf „Änderungen annehmen“; <b>Ablehnen</b>.'],
+      ['Pläne', 'Beim Verlassen des Planmodus erscheint der Plan hier zum Lesen: <b>Genehmigen</b>, genehmigen und Änderungen annehmen, oder weiter planen.'],
+      ['Fragen', 'Wenn Claude eine Frage mit Auswahl stellt, wähle deine Antwort und klicke <b>Antworten</b>.'],
+      ['Die Uhr', 'Das Fenster hat 25 Sekunden für eine Anfrage, zwei Minuten für einen Plan oder eine Frage. Danach fragt wie gewohnt das Terminal, damit nichts auf ein Fenster wartet, auf das niemand schaut.'],
+    ],
+  },
+  room: {
+    name: 'Einen Raum lesen',
+    steps: [
+      ['Die Lampe', 'Über der Tür: <b>grün</b>, solange die Sitzung arbeitet, <b>gelb</b>, solange sie auf dich wartet, <b>rot</b>, während sie endet, grau im Leerlauf.'],
+      ['Der Bildschirm', 'Was das Modell schreibt, während es entsteht; „denkt nach…“ und seine Gedanken, während es nachdenkt.'],
+      ['Die Wolke und das Nickerchen', 'Eine Gedankenwolke über einem Agenten: Er denkt nach. Eine Weile untätig, legt sich Claude auf den Teppich, z’s steigen auf, und es wacht bei der ersten Arbeit auf.'],
+      ['Die Ablage', 'Jede fertige Antwort wird als Blatt hierher getragen; eine längere Antwort ergibt ein dickeres.'],
+      ['Der Schreibtisch', 'Nach einer Änderung schwebt eine Weile ein Blatt mit ihrem Diff über dem Tisch.'],
+      ['Der Kolben', 'Wie voll das Kontextfenster ist: gelb ab 60 %, rot ab 85 %, wieder niedriger nach einer Verdichtung. Sein Etikett zeigt, was die Sitzung gekostet hat.'],
+    ],
+  },
+  building: {
+    name: 'Das Gebäude: Plätze, Etagen und Umzüge',
+    steps: [
+      ['Wie es wächst', 'Drei Räume an einem Flur, dann drei gegenüber; dann Flure nach Osten, Westen, Norden und Süden der Halle; dann Etagen darüber und darunter, mit einem Aufzug in der Halle.'],
+      ['Etagen', 'Die Etagen-Knöpfe oben wechseln zwischen den Etagen.'],
+      ['Einen Platz wählen', 'Im Panel für eine neue Sitzung zeigt <b>Anderen Platz wählen…</b> jeden freien Raum der Etage; die Etagen-Knöpfe reichen eine Etage weiter, nach oben und unten. Einen anklicken, dann den Ordner wählen.'],
+      ['Einen Raum verschieben', '<b>⇄</b> im Panel einer Sitzung verschiebt ihren Raum genauso. Die Sitzung merkt sich ihren Platz und bleibt dort.'],
+    ],
+  },
+  sessions: {
+    name: 'Sitzungen starten und beenden',
+    steps: [
+      ['Eine neue Sitzung', 'Klicke auf den gestrichelten Raum oder öffne sein Panel: <b>Ordner wählen…</b> öffnet den Ordnerdialog des Systems, dann startet ein Terminal dort Claude Code. Sein Raum erscheint, sobald es läuft.'],
+      ['Dort weitermachen, wo du warst', 'Hake <b>Letzte Unterhaltung fortsetzen</b> an, um mit <kbd>claude --continue</kbd> zu starten.'],
+      ['Eine beenden', '<b>⏻</b> im Panel einer Sitzung fragt erst nach, dann verabschiedet sich Claude an der Tür, und die Sitzung endet wie mit <kbd>/exit</kbd>. Ihre Unterhaltung bleibt gespeichert.'],
+    ],
+  },
+  hooks: {
+    name: 'Hooks und Titel',
+    steps: [
+      ['Hook-Ereignisse', 'Jeder Chip oben zeigt das letzte Hook-Ereignis seiner Sitzung: <span style="color:#E3B341">PreToolUse</span>, <span style="color:#3FB950">Stop</span>, <span style="color:#B48EAD">SubagentStart</span>… Sie feuern, ob du Hooks eingerichtet hast oder nicht, so siehst du, wo deine laufen würden.'],
+      ['Alle auf einen Blick', 'Der Tab <b>Aktivität</b> einer Sitzung listet ihre letzten Hook-Ereignisse; in ihrem Terminal zählt <kbd>/workshop hooks</kbd> jede Art und sagt, wann sie feuert.'],
+      ['Titel', '<b>Titel</b> lässt Haiku jeden Turn in wenigen Worten benennen, auf dem Schild des Raums und seinem Chip. Es fragt vor dem Einschalten, da es Tokens kostet.'],
+    ],
+  },
+  terminal: {
+    name: 'Im Terminal',
+    steps: [
+      ['Der Bereich', '<kbd>/workshop</kbd> in einer Sitzung öffnet einen Bereich mit ihrem eigenen Raum in Pixel-Art, dieselben Agenten an denselben Stationen.'],
+      ['Befehle', '<kbd>/workshop hooks</kbd> die Hook-Tabelle, <kbd>/workshop 3d</kbd> dieses Fenster, <kbd>/workshop 3d off</kbd> zum Stoppen, <kbd>/workshop auto</kbd> öffnet den Bereich mit jeder Sitzung, <kbd>/workshop lang de</kbd> oder <kbd>lang en</kbd> wählt die Sprache, <kbd>/workshop help</kbd> zeigt alle.'],
+    ],
+  },
+}
+// A tour's name and steps in the window's language
+function tourText(name) {
+  if (LANG === 'de' && TOURS_GERMAN[name]) return TOURS_GERMAN[name]
+  return { name: TOURS[name].name, steps: TOURS[name].steps.map((step) => [step.title, step.text]) }
 }
 let tourName = 'main'
 const TOUR_DEMOS = {
   permission: { id: 'demo', tool: 'Edit', detail: 'src/server.py', command: null, diff: "- return host == '127.0.0.1'\n+ return host == f'127.0.0.1:{port}'", plan: null, questions: null, canAlways: true, agent: 'main', until: 0 },
   plan: { id: 'demo', tool: 'ExitPlanMode', detail: '', command: null, diff: null, plan: '## Plan\n1. Find where the host is checked\n2. Compare it with the port\n3. Run the tests', questions: null, canAlways: false, agent: 'main', until: 0 },
   question: { id: 'demo', tool: 'AskUserQuestion', detail: '', command: null, diff: null, plan: null, questions: [{ question: 'Which test runner should I use?', header: 'Tests', options: [{ label: 'vitest', description: '' }, { label: 'jest', description: '' }], multiSelect: false }], canAlways: false, agent: 'main', until: 0 },
+}
+// A demo in the window's language
+function tourDemo(name) {
+  const demo = structuredClone(TOUR_DEMOS[name])
+  if (demo.plan) demo.plan = t(demo.plan)
+  for (const question of demo.questions ?? []) Object.assign(question, { question: t(question.question), header: t(question.header) })
+  return demo
 }
 const SPOTS = {
   room: [W / 2, D / 2, 4.5],
@@ -2404,11 +2669,13 @@ function showStep(i) {
   const steps = TOURS[tourName].steps
   tourAt = i
   const step = steps[i]
-  document.getElementById('tour-step').textContent = TOURS[tourName].name + ' · ' + (i + 1) + ' / ' + steps.length
-  document.getElementById('tour-title').textContent = step.title
-  document.getElementById('tour-text').innerHTML = step.text
+  const words = tourText(tourName)
+  document.getElementById('tour-step').textContent = words.name + ' · ' + (i + 1) + ' / ' + steps.length
+  document.getElementById('tour-title').textContent = words.steps[i][0]
+  // The tours' own words, written here: never anything a session said
+  document.getElementById('tour-text').innerHTML = words.steps[i][1]
   document.getElementById('tour-back').disabled = i === 0
-  document.getElementById('tour-next').textContent = i === steps.length - 1 ? 'Done' : 'Next'
+  document.getElementById('tour-next').textContent = t(i === steps.length - 1 ? 'Done' : 'Next')
   document.getElementById('tour-never').hidden = tourName !== 'main'
   tourBox.classList.add('open')
   for (const lit of document.querySelectorAll('.glow')) lit.classList.remove('glow')
@@ -2438,9 +2705,9 @@ function showStep(i) {
   if (step.demo && selected && parts.ask) {
     const state = states.get(selected)
     if (state) {
-      parts.ask.replaceChildren(askCard(state, TOUR_DEMOS[step.demo], false))
+      parts.ask.replaceChildren(askCard(state, tourDemo(step.demo), false))
       parts.keys.ask = 'demo'
-      parts.countdown.textContent = 'an example; nothing is asked'
+      parts.countdown.textContent = t('an example; nothing is asked')
       parts.countdown.dataset.done = '1'
     }
   } else if (parts.keys?.ask === 'demo') {
@@ -2487,7 +2754,7 @@ const toursMenu = document.getElementById('tours')
 document.getElementById('help').onclick = () => {
   toursMenu.replaceChildren(
     ...Object.entries(TOURS).map(([name, tour]) => {
-      const item = el('button', { className: 'item', textContent: tour.name })
+      const item = el('button', { className: 'item', textContent: tourText(name).name })
       item.onclick = () => startTour(name)
       return item
     }),
@@ -2498,7 +2765,7 @@ document.getElementById('help').onclick = () => {
       settings.tour = box.checked ? 'show' : 'never'
       send({ session: '_window', type: 'set-tour', value: settings.tour }).catch(() => {})
     }
-    toursMenu.append(el('label', { className: 'row note item' }, box, 'Show the main tour when the window opens'))
+    toursMenu.append(el('label', { className: 'row note item' }, box, t('Show the main tour when the window opens')))
   }
   toursMenu.classList.toggle('open')
 }
@@ -2522,10 +2789,65 @@ function readSettings() {
     .then((response) => (response.ok ? response.json() : {}))
     .catch(() => ({}))
     .then((read) => {
-      settings = { ...read, ...settings }
+      // The language as the sessions keep it, unless this window just chose one and the session
+      // has not written it yet
+      if ((read.lang === 'en' || read.lang === 'de') && Date.now() - langChosenAt > 5000) setLang(read.lang)
+      settings = { ...read, ...settings, lang: LANG }
       settingsRead = true
     })
 }
+
+// Switching the language: the choice goes to the sessions (so the terminal speaks it too) and is
+// kept in this browser; everything showing words is drawn again
+let langChosenAt = 0
+function setLang(next, isChosen = false) {
+  if (isChosen) {
+    langChosenAt = Date.now()
+    if (CAN_SEND) send({ session: '_window', type: 'set-lang', value: next }).catch(() => {})
+  }
+  try {
+    localStorage.setItem('workshop-lang', next)
+  } catch {
+    // Kept for this page only
+  }
+  if (next === LANG) return
+  LANG = next
+  relabel()
+}
+function relabel() {
+  document.documentElement.lang = LANG
+  for (const node of document.querySelectorAll('[data-t]')) node.textContent = t(node.dataset.t)
+  for (const node of document.querySelectorAll('[data-t-title]')) node.title = t(node.dataset.tTitle)
+  document.getElementById('lang').textContent = LANG.toUpperCase()
+  // The 3D words: signs, station names, the lift's and the stairs' signs, the dashed rooms
+  for (const room of rooms.values()) {
+    room.signKey = ''
+    room.screen.key = ''
+    for (const [id, station] of Object.entries(room.stations)) {
+      const name = label(t(id), { color: '#8b8b96', size: 30 })
+      name.position.copy(station.label.position)
+      room.group.remove(station.label)
+      dispose(station.label)
+      room.group.add(name)
+      station.label = name
+    }
+  }
+  hallsKey = ''
+  frontierKey = ''
+  chipsKey = ''
+  if (placing) {
+    placingText()
+    drawPlacing()
+  }
+  if (selected !== null) buildPanel()
+  if (tourAt >= 0) showStep(tourAt)
+  if (document.getElementById('tours').classList.contains('open')) {
+    document.getElementById('tours').classList.remove('open')
+    document.getElementById('help').click()
+  }
+}
+document.getElementById('lang').onclick = () => setLang(LANG === 'de' ? 'en' : 'de', true)
+relabel()
 claimToken().finally(startReading)
 // The main tour shows by itself each time the window opens, once there is a room to show, until
 // the person says never
@@ -2583,7 +2905,7 @@ function watchMail(live) {
         if (send && sameWords(send.text, delivery.text)) break
       }
       if (send) pairedSends.add(send.id)
-      sendCourier(from ? rooms.get(from.id) : null, to, from?.project ?? 'outside', state.project)
+      sendCourier(from ? rooms.get(from.id) : null, to, from?.project ?? t('outside'), state.project)
     }
   }
 }
@@ -2627,7 +2949,7 @@ function sendCourier(fromRoom, toRoom, fromName, toName) {
       path.push(ringPoint(fromRoom.place.arm, fromY), new THREE.Vector3(0, fromY, 0), new THREE.Vector3(0, toY, 0), ringPoint(toRoom.place.arm, toY))
     }
     const sender = fromRoom.agents.get('main')
-    if (sender) sender.note = { text: '📤 to ' + toName, until: frameClock.elapsedTime + 4 }
+    if (sender) sender.note = { text: t('📤 to {name}', { name: toName }), until: frameClock.elapsedTime + 4 }
   } else {
     // From outside the building: up the lift
     path.push(new THREE.Vector3(0, toY, 0), ringPoint(toRoom.place.arm, toY))
@@ -2641,7 +2963,7 @@ function sendCourier(fromRoom, toRoom, fromName, toName) {
   const g = group(block(0.7, 0.45, 0.45, body, 0, 0.22, 0), block(0.08, 0.14, 0.02, INK, -0.13, 0.5, 0.23), block(0.08, 0.14, 0.02, INK, 0.13, 0.5, 0.23), ...legs, envelope)
   g.position.copy(path[0])
   scene.add(g)
-  couriers.push({ group: g, legs, envelope, path, leg: 1, toRoom, note: '📨 from ' + fromName })
+  couriers.push({ group: g, legs, envelope, path, leg: 1, toRoom, note: t('📨 from {name}', { name: fromName }) })
 }
 function moveCouriers(dt, t) {
   for (const courier of [...couriers]) {

@@ -511,6 +511,16 @@ test('a session takes the spot it was started for, moves when asked, and keeps t
   await clock.advance(300)
   expect(JSON.parse(files.get(base + '/settings.json') ?? '{}')).toEqual({ titles: true, tour: 'never' })
 
+  // The language, chosen in the window, is the terminal's too, and the terminal can choose it back
+  files.set(base + '/inbox/_window/36.json', JSON.stringify({ session: '_window', type: 'set-lang', value: 'de' }))
+  await clock.advance(300)
+  expect(JSON.parse(files.get(base + '/settings.json') ?? '{}')).toEqual({ titles: true, tour: 'never', lang: 'de' })
+  expect((await $.command.run({ command: 'workshop', args: 'help' })).text).toContain('das 3D-Fenster stoppen')
+  expect((await $.command.run({ command: 'workshop', args: 'clear' })).text).toBe('Hook-Zähler zurückgesetzt.')
+  expect((await $.command.run({ command: 'workshop', args: 'lang en' })).text).toBe('The workshop speaks English now.')
+  expect(JSON.parse(files.get(base + '/settings.json') ?? '{}').lang).toBe('en')
+  expect((await $.command.run({ command: 'workshop', args: 'clear' })).text).toBe('Hook counts cleared.')
+
   // A new session at a spot: a script Terminal opens, no Apple Events asked
   files.set(base + '/inbox/_window/4.json', JSON.stringify({ session: '_window', type: 'new-session', dir: "/work/it's here", isContinue: true, slot: 12 }))
   await clock.advance(300)

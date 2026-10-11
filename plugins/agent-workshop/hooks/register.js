@@ -1,4 +1,5 @@
 import { MAIN, SUB, aisleY, doorSpot, drawing, layout, paint, rasterCells, spotAt, stationOf } from './scene.js'
+import { GERMAN, HELP } from './words.js'
 
 const PANE = 'agent-workshop'
 const TITLE = 'Workshop'
@@ -60,6 +61,17 @@ let isAutoOpen = false
 // A small generator of its own, so a test strolls the same way each time
 let seed = 11
 
+// The language the workshop speaks, here and in the window: 'en' or 'de', kept in the shared
+// settings so every session and the window agree
+let lang = 'en'
+function tr(text, vars = {}) {
+  const said = lang === 'de' ? (GERMAN[text] ?? text) : text
+  return said.replace(/\{(\w+)\}/g, (all, name) => (name in vars ? String(vars[name]) : all))
+}
+function readLang(settings) {
+  lang = settings?.lang === 'de' ? 'de' : 'en'
+}
+
 function roll(below) {
   seed = (seed * 1103515245 + 12345) % 2147483648
   return Math.floor(seed / 65536) % below
@@ -119,10 +131,10 @@ function labelFor(e) {
   const tool = String(e.tool)
   if (tool === 'Bash') return '$ ' + (e.command ?? '')
   if (tool === 'Read' || tool === 'Edit' || tool === 'Write') return basename(e.file_path)
-  if (tool === 'Grep' || tool === 'Glob') return String(e.pattern ?? 'searching')
-  if (tool === 'WebFetch') return String(e.url ?? 'fetching').replace(/^https?:\/\//, '')
-  if (tool === 'WebSearch') return String(e.query ?? 'searching')
-  if (tool === 'Agent' || tool === 'Task') return String(e.description ?? 'delegating')
+  if (tool === 'Grep' || tool === 'Glob') return String(e.pattern ?? tr('searching'))
+  if (tool === 'WebFetch') return String(e.url ?? tr('fetching')).replace(/^https?:\/\//, '')
+  if (tool === 'WebSearch') return String(e.query ?? tr('searching'))
+  if (tool === 'Agent' || tool === 'Task') return String(e.description ?? tr('delegating'))
   if (tool.startsWith('mcp__')) return tool.split('__').pop()
   return tool
 }
@@ -415,6 +427,7 @@ async function publish($, isNow = false) {
         .then((text) => JSON.parse(text))
         .catch(() => ({}))
       titlesOn = settings.titles === true
+      readLang(settings)
       if (!titlesOn) title = null
       model = await $.session.model().catch(() => model)
       if (now - listedAt > LIST_MS) {
@@ -590,7 +603,7 @@ async function readBoxes($) {
 let lastLaunchAt = 0
 async function obey($, command, fromWindow = false) {
   if (command.type === 'prompt' && typeof command.text === 'string' && command.text.trim() !== '') {
-    $.ui.toast('Prompt from the workshop window')
+    $.ui.toast(tr('Prompt from the workshop window'))
     windowPrompts = [...windowPrompts, command.text.slice(0, 20000)].slice(-5)
     sentFromWindow = [...sentFromWindow, command.text.slice(0, 20000).trim()].slice(-50)
     // Typed by the person in the window: their own words, which the model reads bare, not framed
@@ -600,7 +613,7 @@ async function obey($, command, fromWindow = false) {
     // A slash command, run as if typed here; what it answers goes to the window's log
     const name = command.command.replace(/^\//, '')
     const args = typeof command.args === 'string' ? command.args : ''
-    $.ui.toast('/' + name + ' from the workshop window')
+    $.ui.toast(tr('{command} from the workshop window', { command: '/' + name }))
     void $.command
       .run({ command: name, args })
       .then((ran) => logCommand($, name, args, ran?.text ?? ''))
@@ -613,19 +626,23 @@ async function obey($, command, fromWindow = false) {
   } else if (command.type === 'end' && !isEnding) {
     // Goodbye first, so the window can show it, then /exit as if typed here
     isEnding = true
-    say(agentFor(), 'bye!', 0)
-    $.ui.toast('The workshop window is ending this session')
+    say(agentFor(), tr('bye!'), 0)
+    $.ui.toast(tr('The workshop window is ending this session'))
     if (turnId !== null) await $.turn.abort({ turnId }).catch(() => {})
     await publish($, true)
     $.clock.after(ENDING_MS, () => {
       void $.command.run({ command: 'exit' }).catch(() => {
         isEnding = false
         say(agentFor(), '')
-        $.ui.toast('The workshop window could not end this session; type /exit here to end it')
+        $.ui.toast(tr('The workshop window could not end this session; type /exit here to end it'))
       })
     })
   } else if (command.type === 'set-titles' && typeof command.on === 'boolean') {
     await saveSetting($, { titles: command.on })
+  } else if (command.type === 'set-lang' && (command.value === 'en' || command.value === 'de')) {
+    lang = command.value
+    await saveSetting($, { lang })
+    $.ui.invalidate('ui.render')
   } else if (command.type === 'set-tour' && (command.value === 'never' || command.value === 'show')) {
     await saveSetting($, { tour: command.value })
   } else if (command.type === 'set-slot' && isSlot(command.slot)) {
@@ -804,8 +821,8 @@ async function startSession($, dir, isContinue = false, at = null) {
   await $.fs.write(file, script.join('\n') + '\n')
   await $.process.run(['chmod', '700', file])
   const opened = await $.process.run(['open', '-a', 'Terminal', file]).catch((error) => ({ exitCode: 1, stderr: String(error?.message ?? error) }))
-  if (opened.exitCode !== 0) tellWindow($, 'Terminal did not open: ' + clip(opened.stderr, 160))
-  else $.ui.toast('Started a new session in ' + dir)
+  if (opened.exitCode !== 0) tellWindow($, tr('Terminal did not open: {error}', { error: clip(opened.stderr, 160) }))
+  else $.ui.toast(tr('Started a new session in {dir}', { dir }))
 }
 
 // Asks for a folder in the system's own dialog, then starts a session there; macOS only. Where
@@ -815,14 +832,14 @@ async function pickAndStart($, isContinue, at) {
   const script = [
     'tell application "Finder"',
     'activate',
-    'set chosen to choose folder with prompt "Start a Claude Code session in:"',
+    'set chosen to choose folder with prompt "' + tr('Start a Claude Code session in:') + '"',
     'end tell',
     'POSIX path of chosen',
   ]
   const ran = await $.process.run(['osascript', ...script.flatMap((line) => ['-e', line])], { timeoutMs: 600000 })
   if (ran.exitCode !== 0) {
     // -128 is the person pressing Cancel; anything else is the dialog failing
-    if (!/-128/.test(ran.stderr)) tellWindow($, 'The folder dialog could not open from here (' + clip(ran.stderr.trim(), 120) + '). Pick a recent project or type a folder instead.', 'pick-failed')
+    if (!/-128/.test(ran.stderr)) tellWindow($, tr('The folder dialog could not open from here ({error}). Pick a recent project or type a folder instead.', { error: clip(ran.stderr.trim(), 120) }), 'pick-failed')
     return
   }
   const dir = ran.stdout.trim().replace(/\/$/, '')
@@ -860,13 +877,14 @@ async function publishProjects($) {
 const EDIT_TOOLS = ['Edit', 'Write', 'MultiEdit', 'NotebookEdit']
 // A permission suggestion in words: what it adds, for whom, and where it is kept
 function describeRule(update) {
-  const where = { session: 'this session', localSettings: 'this project, for you', projectSettings: 'this project, for everyone', userSettings: 'all your projects' }[update?.destination] ?? String(update?.destination ?? '')
+  const known = { session: 'this session', localSettings: 'this project, for you', projectSettings: 'this project, for everyone', userSettings: 'all your projects' }[update?.destination]
+  const where = known === undefined ? String(update?.destination ?? '') : tr(known)
   if (update?.type === 'addRules' || update?.type === 'replaceRules') {
     const rules = (update.rules ?? []).map((rule) => rule.toolName + (rule.ruleContent ? '(' + rule.ruleContent + ')' : '')).join(', ')
-    return (update.behavior === 'deny' ? 'deny ' : update.behavior === 'ask' ? 'ask for ' : 'allow ') + rules + ' — ' + where
+    return tr(update.behavior === 'deny' ? 'deny ' : update.behavior === 'ask' ? 'ask for ' : 'allow ') + rules + ' — ' + where
   }
-  if (update?.type === 'addDirectories') return 'allow work in ' + (update.directories ?? []).join(', ') + ' — ' + where
-  if (update?.type === 'setMode') return 'switch to ' + update.mode + ' — ' + where
+  if (update?.type === 'addDirectories') return tr('allow work in ') + (update.directories ?? []).join(', ') + ' — ' + where
+  if (update?.type === 'setMode') return tr('switch to ') + update.mode + ' — ' + where
   return JSON.stringify(update)
 }
 const SHOWN_MAX = 20000
@@ -911,7 +929,7 @@ async function askWindow($, e) {
   // The oldest request first, with how many wait behind it
   permission = { ...[...pending.values()][0], waiting: pending.size - 1 }
   await publish($, true)
-  $.ui.toast(`${tool === 'AskUserQuestion' ? 'A question' : 'Permission for ' + tool} is waiting in the workshop window; it comes here in ${waitS} s`)
+  $.ui.toast(tool === 'AskUserQuestion' ? tr('A question is waiting in the workshop window; it comes here in {s} s', { s: waitS }) : tr('Permission for {tool} is waiting in the workshop window; it comes here in {s} s', { tool, s: waitS }))
   const wait = 'f=$1; n=$(( $2 * 4 )); while [ $n -gt 0 ]; do if [ -f "$f" ]; then cat "$f"; rm -f "$f"; exit 0; fi; sleep 0.25; n=$((n - 1)); done; exit 1'
   try {
     const ran = await $.process.run(['sh', '-c', wait, 'wait', self.base + '/decisions/' + id, String(waitS)], {
@@ -1071,7 +1089,7 @@ function stopServer() {
 // key in the address's fragment, which the page swaps for the token: no command line and no page
 // anyone can fetch carries the token. Without python3 the page opens as a file, to watch only
 async function open3d($) {
-  if (self.base === null) return 'The 3D window needs a home folder to share between sessions, and found none.'
+  if (self.base === null) return tr('The 3D window needs a home folder to share between sessions, and found none.')
   await $.process.run(['mkdir', '-p', '-m', '700', self.base]).catch(() => {})
   await $.process.run(['chmod', '700', self.base]).catch(() => {})
   await $.fs.write(self.base + '/index.html', await $.fs.read($.plugin.root + '/web/workshop.html'))
@@ -1100,11 +1118,11 @@ async function open3d($) {
     const ran = await $.process.run(argv).catch(() => null)
     if (ran !== null && ran.exitCode === 0) {
       return port === null
-        ? '3D workshop opened to watch only (python3 was not found, so it cannot send commands).'
-        : '3D workshop opened: every session running this mod gets a room, and you can prompt them from it.'
+        ? tr('3D workshop opened to watch only (python3 was not found, so it cannot send commands).')
+        : tr('3D workshop opened: every session running this mod gets a room, and you can prompt them from it.')
     }
   }
-  return 'Could not open a browser. Open this in one: ' + page
+  return tr('Could not open a browser. Open this in one: {page}', { page })
 }
 
 // The port of a window server already running for the shared folder, when its heartbeat is fresh
@@ -1150,20 +1168,6 @@ async function sweep($, now) {
   if (empty.length > 0) await $.process.run(['rm', '-rf', '--', ...empty]).catch(() => {})
 }
 
-const HELP = [
-  'agent workshop: watch Claude and its subagents work, and use your sessions from one window.',
-  '',
-  '/workshop          a pane here: this session\'s room, agents at their tool stations',
-  '/workshop hooks    the hook events, how often each fired, and when each fires',
-  '/workshop 3d       a 3D window with a room for every session running this mod, where you can',
-  '                   chat with a session, run its slash commands, answer its permission',
-  '                   requests, plans and questions, start new sessions and end them',
-  '/workshop 3d off   stop the 3D window',
-  '/workshop auto     open the pane with every session',
-  '',
-  'In the 3D window, the ? button at the top takes you on a short tour.',
-].join('\n')
-
 async function open($) {
   await $.ui.open({ id: PANE, title: TITLE, rows: 24, columns: 110 })
 }
@@ -1174,7 +1178,7 @@ export function register(on) {
     await $.command.register({
       name: 'workshop',
       description: 'Open the agent workshop: Claude and its subagents at their tool stations; /workshop 3d opens it in 3D in a window of its own',
-      argumentHint: '[close|floor|hooks|clear|auto|3d|3d off|help]',
+      argumentHint: '[close|floor|hooks|clear|auto|3d|3d off|lang en|lang de|help]',
       immediate: true,
     })
     isAutoOpen = (await $.store.get('isAutoOpen')) === true
@@ -1196,6 +1200,7 @@ export function register(on) {
       const kept = await $.store.get('slot:' + self.id).catch(() => undefined)
       const given = Number(await $.env.get('AGENT_WORKSHOP_SLOT').catch(() => undefined))
       slot = isSlot(kept) ? kept : isSlot(given) ? given : null
+      readLang(await $.fs.read(self.base + '/settings.json').then((text) => JSON.parse(text)).catch(() => ({})))
       $.clock.every(STATE_MS, () => void publish($).catch(() => {}))
     } catch {
       self = { ...self, base: null }
@@ -1209,29 +1214,36 @@ export function register(on) {
     if (arg === '' || arg === 'open' || arg === 'floor' || arg === 'hooks') {
       if (arg === 'floor' || arg === 'hooks') view = arg
       await open($)
-      return { text: 'Workshop opened.' }
+      return { text: tr('Workshop opened.') }
     }
     if (arg === 'close') {
       await $.ui.close({ id: PANE })
-      return { text: 'Workshop closed.' }
+      return { text: tr('Workshop closed.') }
     }
-    if (arg === 'help') return { text: HELP }
+    if (arg === 'help') return { text: HELP[lang] }
+    if (arg === 'lang en' || arg === 'lang de') {
+      if (self.base === null) return { text: tr('The language needs a home folder to keep it in, and found none.') }
+      lang = arg.slice(5)
+      await saveSetting($, { lang })
+      $.ui.invalidate('ui.render')
+      return { text: tr(lang === 'de' ? 'The workshop speaks German now.' : 'The workshop speaks English now.') }
+    }
     if (arg === '3d') return { text: await open3d($) }
     if (arg === '3d off') {
       close3d($)
-      return { text: 'The 3D window stops updating in a few seconds; close it when you like.' }
+      return { text: tr('The 3D window stops updating in a few seconds; close it when you like.') }
     }
     if (arg === 'clear') {
       counts = {}
       lastHook = null
-      return { text: 'Hook counts cleared.' }
+      return { text: tr('Hook counts cleared.') }
     }
     if (arg === 'auto') {
       isAutoOpen = !isAutoOpen
       await $.store.set('isAutoOpen', isAutoOpen)
-      return { text: isAutoOpen ? 'The workshop opens with each session (on terminals 144 columns or wider).' : 'The workshop opens only on /workshop.' }
+      return { text: tr(isAutoOpen ? 'The workshop opens with each session (on terminals 144 columns or wider).' : 'The workshop opens only on /workshop.') }
     }
-    return { text: 'usage: /workshop [close|floor|hooks|clear|auto|3d|3d off|help]' }
+    return { text: tr('usage: /workshop [close|floor|hooks|clear|auto|3d|3d off|lang en|lang de|help]') }
   })
 
   // Every settings hook event, whether or not a settings hook is configured: counted, and the
@@ -1239,7 +1251,7 @@ export function register(on) {
   on('classic.*', async ($, e, next) => {
     const event = next.event.slice('classic.'.length)
     if (typeof e.permission_mode === 'string' && e.agent_id === undefined) permissionMode = e.permission_mode
-    if (event === 'SubagentStart') say(agentFor(e.agent_id, e.agent_type), 'hi!', ALERT_TICKS)
+    if (event === 'SubagentStart') say(agentFor(e.agent_id, e.agent_type), tr('hi!'), ALERT_TICKS)
     record(event, e)
     recentHooks = remember(recentHooks, { event, who: lastHook.who, at: Date.now() })
     if (event === 'SubagentStop') {
@@ -1247,12 +1259,12 @@ export function register(on) {
       if (agent !== undefined) {
         agent.isLeaving = true
         agent.station = null
-        say(agent, 'bye', ALERT_TICKS)
+        say(agent, tr('bye'), ALERT_TICKS)
       }
     } else if (event === 'PermissionRequest' || (event === 'Notification' && e.notification_type === 'permission_prompt')) {
       const agent = agentFor(e.agent_id)
       agent.isWaiting = true
-      say(agent, '? ' + (e.tool_name ?? 'may I'), 0, '#E3B341')
+      say(agent, '? ' + (e.tool_name ?? tr('may I')), 0, '#E3B341')
       // With a window that can answer, it gets the first say; the terminal asks if it doesn't
       if (event === 'PermissionRequest' && canControl && self.base !== null) {
         const answer = await askWindow($, e)
@@ -1262,7 +1274,7 @@ export function register(on) {
       isWorking = true
       say(agentFor(), '!', ALERT_TICKS)
     } else if (event === 'PreCompact') {
-      say(agentFor(), 'tidying up…', DONE_TICKS)
+      say(agentFor(), tr('tidying up…'), DONE_TICKS)
     }
     return next(e)
   }).catch(($, e, next) => next(e))
@@ -1311,7 +1323,7 @@ export function register(on) {
     try {
       const answer = await next(e)
       if (answer.deny !== undefined || answer.isError) {
-        say(agent, answer.deny !== undefined ? 'blocked' : 'oops', OOPS_TICKS, '#E5484D')
+        say(agent, tr(answer.deny !== undefined ? 'blocked' : 'oops'), OOPS_TICKS, '#E5484D')
       }
       settle(answer.deny !== undefined ? 'blocked' : answer.isError ? 'failed' : 'ok')
       const diff = answer.deny === undefined && !answer.isError ? diffOf(e) : null
@@ -1389,9 +1401,9 @@ export function register(on) {
     agent.isWaiting = false
     busy = {}
     const seconds = Math.round(e.durationMs / 1000)
-    if (e.reason === 'answer') say(agent, 'done ✓ ' + seconds + 's', DONE_TICKS, '#3FB950')
-    else if (e.reason === 'aborted') say(agent, 'stopped', DONE_TICKS)
-    else say(agent, e.reason === 'refusal' ? 'refused' : 'error', DONE_TICKS, '#E5484D')
+    if (e.reason === 'answer') say(agent, tr('done ✓ {s}s', { s: seconds }), DONE_TICKS, '#3FB950')
+    else if (e.reason === 'aborted') say(agent, tr('stopped'), DONE_TICKS)
+    else say(agent, tr(e.reason === 'refusal' ? 'refused' : 'error'), DONE_TICKS, '#E5484D')
     return next(e)
   })
 
@@ -1407,22 +1419,22 @@ export function register(on) {
       columnGap: 1,
       children: [
         Text({ bold: true, children: ['agent workshop'] }),
-        Text({ dimColor: true, children: [`· ${subagents} subagent${subagents === 1 ? '' : 's'}`] }),
+        Text({ dimColor: true, children: [tr(subagents === 1 ? '· {n} subagent' : '· {n} subagents', { n: subagents })] }),
         lastHook === null
-          ? Text({ dimColor: true, children: ['· no hooks yet'] })
+          ? Text({ dimColor: true, children: [tr('· no hooks yet')] })
           : Box({
               key: 'last-hook',
               flexDirection: 'row',
               columnGap: 1,
               children: [
-                Text({ dimColor: true, children: ['· hook'] }),
+                Text({ dimColor: true, children: [tr('· hook')] }),
                 Text({ color: eventColor(lastHook.event), children: [lastHook.event] }),
                 Text({ color: lastHook.color, children: [lastHook.who] }),
               ],
             }),
         Box({ flexGrow: 1, children: [] }),
-        Button({ key: 'floor', label: 'room', hotkey: 'f', plain: true, dimColor: view !== 'floor', onPress: () => setView($, 'floor') }),
-        Button({ key: 'hooks', label: 'hooks', hotkey: 'h', plain: true, dimColor: view !== 'hooks', onPress: () => setView($, 'hooks') }),
+        Button({ key: 'floor', label: tr('room'), hotkey: 'f', plain: true, dimColor: view !== 'floor', onPress: () => setView($, 'floor') }),
+        Button({ key: 'hooks', label: tr('hooks'), hotkey: 'h', plain: true, dimColor: view !== 'hooks', onPress: () => setView($, 'hooks') }),
       ],
     })
 
@@ -1456,7 +1468,7 @@ export function register(on) {
     const picture =
       e.surface === 'terminal'
         ? elements.Raster({ key: 'scene', columns: room.width, rows: room.rows, cells: rasterCells(painted) })
-        : elements.Svg({ ...drawing(painted), alt: 'The agent workshop: ' + describe() })
+        : elements.Svg({ ...drawing(painted), alt: tr('The agent workshop: ') + describe() })
     return Box({
       flexDirection: 'column',
       children: [header, Box({ key: 'floor', marginLeft: Math.floor((columns - room.width) / 2), children: [picture] })],
@@ -1472,7 +1484,7 @@ function setView($, next) {
 // Who is doing what, in words
 function describe() {
   return [...agents.values()]
-    .map((agent) => agent.name + (agent.station === null ? ' idle' : ' at ' + agent.station) + (agent.isWaiting ? ' (waiting for you)' : ''))
+    .map((agent) => agent.name + (agent.station === null ? tr(' idle') : tr(' at {station}', { station: tr(agent.station) })) + (agent.isWaiting ? tr(' (waiting for you)') : ''))
     .join(', ')
 }
 
@@ -1489,7 +1501,7 @@ function roster({ Box, Text }, columns) {
         children: [
           Text({ color: agent.color, children: ['●'] }),
           Text({ children: [pad(agent.name, NAME_MAX)] }),
-          Text({ dimColor: true, children: [pad(agent.station ?? 'idle', 7)] }),
+          Text({ dimColor: true, children: [pad(tr(agent.station ?? 'idle'), 10)] }),
           Text({ children: [clip(agent.bubble, Math.max(1, columns - NAME_MAX - 12))] }),
         ],
       }),
@@ -1506,7 +1518,7 @@ function hooksTable({ Box, Text }, columns) {
     key: 'hooks-table',
     flexDirection: 'column',
     children: [
-      Text({ dimColor: true, children: ['Settings hooks fire at these points. Each count is this session’s.'] }),
+      Text({ dimColor: true, children: [tr('Settings hooks fire at these points. Each count is this session’s.')] }),
       ...[...HOOKS, ...extra].map(([name, text]) =>
         Box({
           key: 'hook-' + name,
@@ -1514,7 +1526,7 @@ function hooksTable({ Box, Text }, columns) {
           children: [
             Text({ color: eventColor(name), dimColor: counts[name] === undefined, children: [pad(name, EVENT_WIDTH)] }),
             Text({ children: [String(counts[name] ?? 0).padStart(4) + '  '] }),
-            Text({ dimColor: true, children: [clip(text, describeWidth)] }),
+            Text({ dimColor: true, children: [clip(tr(text), describeWidth)] }),
           ],
         }),
       ),
