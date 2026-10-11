@@ -2,7 +2,7 @@
 
 Watch Claude and its subagents work, and use all your sessions from one window.
 
-![agent-workshop: every Claude Code session as a room in a 3D building](https://raw.githubusercontent.com/MarkMerk/markmerk-mods/main/assets/agent-workshop.gif)
+![agent-workshop: every Claude Code session as a room in a 3D building](https://raw.githubusercontent.com/MarkMerk/markmerk-mods/main/assets/agent-workshop.webp)
 
 - **`/workshop`** opens a pixel-art pane in the terminal: Claude and its subagents walk between
   tool stations (a desk with a monitor for Bash, a bookshelf for reading and searching, a writing
