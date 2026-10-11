@@ -329,13 +329,13 @@ try {
 } catch {
   LANG = /^de\b/i.test(navigator.language ?? '') ? 'de' : 'en'
 }
-function t(text, vars = {}) {
+function tr(text, vars = {}) {
   const said = LANG === 'de' ? (GERMAN[text] ?? text) : text
   return said.replace(/\{(\w+)\}/g, (all, name) => (name in vars ? String(vars[name]) : all))
 }
 // A count with its word: "1 session", "3 sessions"
 function counted(n, word) {
-  return n + ' ' + t(n === 1 ? word : word + 's')
+  return n + ' ' + tr(n === 1 ? word : word + 's')
 }
 
 // A room's size, the wall between two rooms, the corridors, and the height of a floor
@@ -738,7 +738,7 @@ function buildHalls(places) {
       const post = block(0.12, FLOOR_H, 0.12, METAL, Math.sin(angle) * 1.15, -0.3, Math.cos(angle) * 1.15)
       g.add(post)
     }
-    const sign = label(t('lift') + ' · ' + levelName(level), { size: 36, scale: 0.013, background: 'rgba(36, 34, 43, 0.9)' })
+    const sign = label(tr('lift') + ' · ' + levelName(level), { size: 36, scale: 0.013, background: 'rgba(36, 34, 43, 0.9)' })
     sign.position.y = 3.9
     g.add(shaft, sign)
     // Stairs up in one corner, rising toward the floor above; stairs down in the other, into the
@@ -861,7 +861,7 @@ function buildRoom(slot, isGuest = false) {
     const station = MAKERS[id]()
     station.position.set(x, 0, isBack ? 0.65 : 6.5)
     g.add(station)
-    const name = label(t(id), { color: '#8b8b96', size: 30 })
+    const name = label(tr(id), { color: '#8b8b96', size: 30 })
     name.position.set(x, 0.22, isBack ? 1.45 : 7.6)
     g.add(name)
     stations[id] = { group: station, x, isBack, label: name, isBusy: false }
@@ -954,7 +954,7 @@ function placeFrontier() {
   if (key === frontierKey) return
   frontierKey = key
   for (const one of frontier) removeThing(one.group)
-  frontier = slots.map((slot) => outlineRoom(slot, t('+ new session'), 0x8b8b96))
+  frontier = slots.map((slot) => outlineRoom(slot, tr('+ new session'), 0x8b8b96))
   ghost = frontier[0] ?? null
 }
 
@@ -970,7 +970,7 @@ function describeSlot(slot) {
   const place = placeOf(slot)
   const r = slot % PER_FLOOR
   const side = r % (PER_SIDE * 2) < PER_SIDE ? 'one side' : 'the other side'
-  return t('{floor} · {arm} corridor, {side}, room {n}', { floor: levelName(place.level), arm: t(ARM_NAMES[place.arm]), side: t(side), n: place.pos + 1 })
+  return tr('{floor} · {arm} corridor, {side}, room {n}', { floor: levelName(place.level), arm: tr(ARM_NAMES[place.arm]), side: tr(side), n: place.pos + 1 })
 }
 function outlineRoom(slot, text, color) {
   const place = placeOf(slot)
@@ -995,7 +995,7 @@ function drawPlacing() {
   for (let slot = first; slot < first + PER_FLOOR; slot++) {
     if (isTaken(slot, placing.id)) continue
     if (placing.purpose === 'move' && rooms.get(placing.id)?.slot === slot) continue
-    placing.ghosts.push(outlineRoom(slot, t(placing.purpose === 'move' ? 'move here' : 'here'), 0xd97757))
+    placing.ghosts.push(outlineRoom(slot, tr(placing.purpose === 'move' ? 'move here' : 'here'), 0xd97757))
   }
   frontierKey = ''
   syncRooms()
@@ -1014,7 +1014,7 @@ function startPlacing(purpose, id = null) {
 function placingText() {
   const { purpose, id } = placing
   document.getElementById('placing-text').textContent =
-    purpose === 'move' ? t('Pick where {name} moves to: any dashed room, on any floor (floor buttons at the top).', { name: states.get(id)?.project ?? t('this room') }) : t('Pick a spot for the new session: any dashed room, on any floor (floor buttons at the top).')
+    purpose === 'move' ? tr('Pick where {name} moves to: any dashed room, on any floor (floor buttons at the top).', { name: states.get(id)?.project ?? tr('this room') }) : tr('Pick a spot for the new session: any dashed room, on any floor (floor buttons at the top).')
 }
 function stopPlacing() {
   if (!placing) return
@@ -1200,7 +1200,7 @@ function apply(room, state) {
     if (!seen.has(agent.id) && !agent.gone) {
       agent.gone = true
       agent.state = { ...agent.state, station: null, calls: 0 }
-      setBubble(agent, t('bye'), null)
+      setBubble(agent, tr('bye'), null)
     }
   }
   // A new answer: the main agent carries a sheet to the tray, where it lands on the pile
@@ -1228,7 +1228,7 @@ function apply(room, state) {
       room.group.remove(room.sign)
       dispose(room.sign)
     }
-    const name = plain((state.guest ? t('👁 guest') + ' · ' : '') + (state.title ? state.project + ' — ' + state.title : state.project))
+    const name = plain((state.guest ? tr('👁 guest') + ' · ' : '') + (state.title ? state.project + ' — ' + state.title : state.project))
     room.sign = label(name, { size: 44, scale: 0.012, background: state.guest ? 'rgba(30, 64, 72, 0.92)' : 'rgba(36, 34, 43, 0.9)', dot: '#' + lampColor.toString(16).padStart(6, '0') })
     room.sign.position.set(W / 2, WALL + 0.7, 0)
     room.group.add(room.sign)
@@ -1284,7 +1284,7 @@ function startReading() {
   if (location.protocol === 'http:' && !CAN_SEND) {
     const offline = document.getElementById('offline')
     offline.dataset.t = 'This window has no key to the sessions. Open it again with /workshop 3d in a Claude Code session.'
-    offline.textContent = t(offline.dataset.t)
+    offline.textContent = tr(offline.dataset.t)
   }
 }
 
@@ -1437,7 +1437,7 @@ function renderChips(live) {
   document.getElementById('rooms').replaceChildren(
     ...live.map((state) => {
       const chip = el('button', { className: 'chip' + (selected === state.id ? ' focused' : '') }, el('span', { className: 'dot ' + statusOf(state) }), el('span', { textContent: plain(state.project) }))
-      if (state.guest) chip.append(el('span', { className: 'tag', textContent: t('👁 guest') }))
+      if (state.guest) chip.append(el('span', { className: 'tag', textContent: tr('👁 guest') }))
       if (state.title) chip.append(el('span', { className: 'dim', textContent: plain(state.title) }))
       const room = rooms.get(state.id)
       if ([...rooms.values()].some((other) => other.place.level !== 0) && room) chip.append(el('span', { className: 'tag', textContent: levelName(room.place.level) }))
@@ -1459,7 +1459,7 @@ function renderTitlesToggle(live) {
   const isOn = live.some((state) => state.titlesOn)
   const able = CAN_SEND && live.some((state) => state.canControl)
   toggle.style.display = able ? '' : 'none'
-  const text = t('titles') + ': ' + t(isOn ? 'on' : 'off')
+  const text = tr('titles') + ': ' + tr(isOn ? 'on' : 'off')
   if (toggle.textContent !== text) toggle.textContent = text
   toggle.onclick = () => {
     if (isOn) send({ session: '_window', type: 'set-titles', on: false }).catch(() => {})
@@ -1633,7 +1633,7 @@ async function send(command) {
     headers: { 'Content-Type': 'application/json', 'X-Workshop-Token': TOKEN },
     body: JSON.stringify(command),
   })
-  if (!response.ok) throw new Error(t('the workshop refused it ({code})', { code: response.status }))
+  if (!response.ok) throw new Error(tr('the workshop refused it ({code})', { code: response.status }))
 }
 async function upload(file) {
   const response = await fetch('/upload?session=' + encodeURIComponent(selected) + '&name=' + encodeURIComponent(file.name || 'pasted.png'), {
@@ -1641,7 +1641,7 @@ async function upload(file) {
     headers: { 'X-Workshop-Token': TOKEN },
     body: file,
   })
-  if (!response.ok) throw new Error(t('the upload was refused ({code})', { code: response.status }))
+  if (!response.ok) throw new Error(tr('the upload was refused ({code})', { code: response.status }))
   return (await response.json()).path
 }
 function openPanel(id) {
@@ -1678,7 +1678,7 @@ window.workshopProjects = (list) => {
   if (selected === 'new' && parts.projects) parts.projects.replaceChildren(...projectButtons())
 }
 function projectButtons() {
-  if (projects.length === 0) return [el('div', { className: 'note', textContent: t('No recent projects yet.') })]
+  if (projects.length === 0) return [el('div', { className: 'note', textContent: tr('No recent projects yet.') })]
   return projects.map((project) => {
     const button = el('button', { className: 'item', title: project.dir }, el('span', { textContent: plain(project.dir.split('/').filter(Boolean).pop() ?? '/') }), el('span', { className: 'dim', textContent: plain(project.dir.replace(/^\/Users\/[^/]+/, '~')) }))
     button.onclick = () => startIn(project.dir)
@@ -1688,7 +1688,7 @@ function projectButtons() {
 async function startIn(dir) {
   const spot = newSlot ?? ghost?.slot ?? freeSlot()
   parts.status.className = 'note'
-  parts.status.textContent = t('starting Claude Code in {dir}…', { dir })
+  parts.status.textContent = tr('starting Claude Code in {dir}…', { dir })
   try {
     await send({ session: '_window', type: 'new-session', dir, isContinue: parts.keepGoing.checked, slot: spot })
     reserved.set(spot, Date.now())
@@ -1700,43 +1700,43 @@ async function startIn(dir) {
 
 function buildNewSession(close) {
   const spot = newSlot ?? ghost?.slot ?? freeSlot()
-  const elsewhere = el('button', { className: 'button', textContent: t('Choose another spot…') })
+  const elsewhere = el('button', { className: 'button', textContent: tr('Choose another spot…') })
   elsewhere.onclick = () => startPlacing('new')
   parts.status = el('span', { className: 'note' })
   parts.keepGoing = el('input', { type: 'checkbox' })
-  const choose = el('button', { className: 'button primary', textContent: t('Choose folder…') })
+  const choose = el('button', { className: 'button primary', textContent: tr('Choose folder…') })
   choose.onclick = async () => {
     choose.disabled = true
     try {
       await send({ session: '_window', type: 'pick-folder', isContinue: parts.keepGoing.checked, slot: spot })
       reserved.set(spot, Date.now())
       parts.status.className = 'note'
-      parts.status.textContent = t('pick a folder in the dialog that opens; a Terminal starts Claude Code there')
+      parts.status.textContent = tr('pick a folder in the dialog that opens; a Terminal starts Claude Code there')
     } catch (error) {
       parts.status.className = 'failed'
       parts.status.textContent = error.message
     }
     setTimeout(() => (choose.disabled = false), 3000)
   }
-  const path = el('input', { type: 'text', placeholder: t('/path/to/a/folder') })
-  const go = el('button', { className: 'button', textContent: t('Start') })
+  const path = el('input', { type: 'text', placeholder: tr('/path/to/a/folder') })
+  const go = el('button', { className: 'button', textContent: tr('Start') })
   go.onclick = () => path.value.trim() && startIn(path.value.trim())
   path.addEventListener('keydown', (event) => event.key === 'Enter' && go.click())
   parts.projects = el('div', { className: 'menu small projects' }, ...projectButtons())
   load('projects.js')
   panel.append(
     el('div', { className: 'top' },
-      el('h2', {}, el('span', { textContent: t('New session') }), close),
-      el('div', { className: 'note', textContent: t('A Terminal window opens running Claude Code in the folder; its room appears here once it starts. macOS.') }),
+      el('h2', {}, el('span', { textContent: tr('New session') }), close),
+      el('div', { className: 'note', textContent: tr('A Terminal window opens running Claude Code in the folder; its room appears here once it starts. macOS.') }),
       el('div', { className: 'row wrap' }, el('span', { className: 'pill', textContent: describeSlot(spot) }), elsewhere),
-      el('label', { className: 'row note' }, parts.keepGoing, t('Continue the last conversation in that folder')),
+      el('label', { className: 'row note' }, parts.keepGoing, tr('Continue the last conversation in that folder')),
       el('div', { className: 'row' }, choose),
       parts.status,
     ),
     el('div', { className: 'scroll' },
-      el('h3', { textContent: t('Recent projects') }),
+      el('h3', { textContent: tr('Recent projects') }),
       parts.projects,
-      el('h3', { textContent: t('Or a folder'), style: 'margin-top:12px' }),
+      el('h3', { textContent: tr('Or a folder'), style: 'margin-top:12px' }),
       el('div', { className: 'row' }, path, go),
     ),
   )
@@ -1745,7 +1745,7 @@ function buildNewSession(close) {
 function buildPanel() {
   panel.replaceChildren()
   parts = { keys: {} }
-  const close = el('button', { id: 'close', textContent: '×', title: t('Close') })
+  const close = el('button', { id: 'close', textContent: '×', title: tr('Close') })
   close.onclick = closePanel
   if (selected === 'new') return buildNewSession(close)
   const state = states.get(selected)
@@ -1753,8 +1753,8 @@ function buildPanel() {
 
   // The header: how the session is, its model (click to change it) and its permission mode
   parts.dot = el('span', { className: 'dot' })
-  parts.model = el('button', { className: 'pill', title: t('Change the model') })
-  parts.mode = el('span', { className: 'pill dim', title: t('Permission mode') })
+  parts.model = el('button', { className: 'pill', title: tr('Change the model') })
+  parts.mode = el('span', { className: 'pill dim', title: tr('Permission mode') })
   parts.modelMenu = el('div', { className: 'menu small' })
   parts.modelMenu.hidden = true
   parts.model.onclick = () => (parts.modelMenu.hidden = !parts.modelMenu.hidden)
@@ -1766,7 +1766,7 @@ function buildPanel() {
     }
     parts.modelMenu.append(item)
   }
-  const other = el('button', { className: 'item dim', textContent: t('other… (/model)') })
+  const other = el('button', { className: 'item dim', textContent: tr('other… (/model)') })
   other.onclick = () => {
     parts.modelMenu.hidden = true
     parts.prompt.value = '/model '
@@ -1774,24 +1774,24 @@ function buildPanel() {
     updateMenu()
   }
   parts.modelMenu.append(other)
-  parts.move = el('button', { id: 'move', textContent: '⇄', title: t('Move this room') })
+  parts.move = el('button', { id: 'move', textContent: '⇄', title: tr('Move this room') })
   parts.move.onclick = () => startPlacing('move', selected)
-  parts.end = el('button', { id: 'end', textContent: '⏻', title: t('End this session') })
+  parts.end = el('button', { id: 'end', textContent: '⏻', title: tr('End this session') })
   parts.confirm = el('div')
   parts.end.onclick = () => {
     const working = states.get(selected)?.isWorking
-    const yes = el('button', { className: 'button deny', textContent: t('End session') })
-    const no = el('button', { className: 'button', textContent: t('Cancel') })
+    const yes = el('button', { className: 'button deny', textContent: tr('End session') })
+    const no = el('button', { className: 'button', textContent: tr('Cancel') })
     no.onclick = () => parts.confirm.replaceChildren()
     yes.onclick = async () => {
       yes.disabled = no.disabled = true
       await send({ session: selected, type: 'end' }).catch((error) => (parts.sent.textContent = error.message))
-      parts.confirm.replaceChildren(el('div', { className: 'note', textContent: t('Saying goodbye…') }))
+      parts.confirm.replaceChildren(el('div', { className: 'note', textContent: tr('Saying goodbye…') }))
     }
     parts.confirm.replaceChildren(
       el('div', { className: 'confirm' },
-        el('b', { textContent: t('End {name}?', { name: plain(state.project) }) }),
-        el('div', { className: 'note', textContent: (working ? t('It is working right now; its turn will be stopped. ') : '') + t('Claude says goodbye, then exits in its terminal, as /exit does. The conversation stays on disk, so claude --continue there picks it up again.') }),
+        el('b', { textContent: tr('End {name}?', { name: plain(state.project) }) }),
+        el('div', { className: 'note', textContent: (working ? tr('It is working right now; its turn will be stopped. ') : '') + tr('Claude says goodbye, then exits in its terminal, as /exit does. The conversation stays on disk, so claude --continue there picks it up again.') }),
         el('div', { className: 'row' }, yes, no),
       ),
     )
@@ -1809,10 +1809,10 @@ function buildPanel() {
   const pages = {
     chat: parts.chat,
     edits: parts.edits,
-    activity: el('div', {}, el('h3', { textContent: t('Agents') }), parts.agents, el('h3', { textContent: t('Tool calls'), style: 'margin-top:12px' }), parts.calls, el('h3', { textContent: t('Hooks'), style: 'margin-top:12px' }), parts.hooks),
+    activity: el('div', {}, el('h3', { textContent: tr('Agents') }), parts.agents, el('h3', { textContent: tr('Tool calls'), style: 'margin-top:12px' }), parts.calls, el('h3', { textContent: tr('Hooks'), style: 'margin-top:12px' }), parts.hooks),
   }
   const tabs = Object.keys(pages).map((name) => {
-    const tab = el('button', { className: 'tab', textContent: t(name[0].toUpperCase() + name.slice(1)) })
+    const tab = el('button', { className: 'tab', textContent: tr(name[0].toUpperCase() + name.slice(1)) })
     tab.onclick = () => showTab(name)
     return tab
   })
@@ -1826,17 +1826,17 @@ function buildPanel() {
   parts.scroll = el('div', { className: 'scroll' }, ...Object.values(pages))
 
   // The composer
-  parts.prompt = el('textarea', { placeholder: t('Message {name}…   / for commands, @ for files, paste or drop to attach', { name: plain(state.project) }) })
+  parts.prompt = el('textarea', { placeholder: tr('Message {name}…   / for commands, @ for files, paste or drop to attach', { name: plain(state.project) }) })
   parts.menu = el('div', { className: 'menu' })
   parts.menu.hidden = true
   parts.attached = el('div', { className: 'row wrap' })
   parts.files = []
   parts.picker = el('input', { type: 'file', multiple: true, hidden: true })
-  const attach = el('button', { className: 'button', textContent: '📎', title: t('Attach files') })
+  const attach = el('button', { className: 'button', textContent: '📎', title: tr('Attach files') })
   attach.onclick = () => parts.picker.click()
   parts.picker.onchange = () => attachFiles([...parts.picker.files])
-  parts.send = el('button', { className: 'button primary', textContent: t('Send') })
-  parts.stop = el('button', { className: 'button', textContent: t('Stop') })
+  parts.send = el('button', { className: 'button primary', textContent: tr('Send') })
+  parts.stop = el('button', { className: 'button', textContent: tr('Stop') })
   parts.sent = el('span', { className: 'note' })
   parts.watchOnly = el('div', { className: 'note' })
   parts.send.onclick = sendComposer
@@ -1907,9 +1907,9 @@ function updateMenu() {
 // Where a slash command comes from, as a short tag: Claude Code's own, a plugin's (named), the
 // user's or project's own, or an MCP server's prompt
 function sourceTag(command) {
-  if (command.source === 'builtin') return t('built-in')
-  if (command.source === 'plugin') return command.plugin ? t('plugin · {name}', { name: command.plugin }) : t('plugin')
-  if (command.source === 'user') return t('yours')
+  if (command.source === 'builtin') return tr('built-in')
+  if (command.source === 'plugin') return command.plugin ? tr('plugin · {name}', { name: command.plugin }) : tr('plugin')
+  if (command.source === 'user') return tr('yours')
   if (command.source === 'mcp') return 'mcp'
   return ''
 }
@@ -1958,12 +1958,12 @@ function composerKeys(event) {
 }
 async function attachFiles(files) {
   for (const file of files) {
-    const chip = el('span', { className: 'pill', textContent: '⇡ ' + (file.name || t('pasted image')) })
+    const chip = el('span', { className: 'pill', textContent: '⇡ ' + (file.name || tr('pasted image')) })
     parts.attached.append(chip)
     try {
       const path = await upload(file)
       parts.files.push(path)
-      chip.textContent = '📎 ' + (file.name || t('pasted image'))
+      chip.textContent = '📎 ' + (file.name || tr('pasted image'))
       chip.title = path
     } catch (error) {
       chip.className = 'pill failed'
@@ -1994,11 +1994,11 @@ async function sendComposer() {
     const command = commandIn(text)
     if (command && parts.files.length === 0) {
       await send({ session: selected, type: 'command', command: command[1], args: command[2].trim() })
-      parts.sent.textContent = t('{command} sent ✓', { command: '/' + command[1] })
+      parts.sent.textContent = tr('{command} sent ✓', { command: '/' + command[1] })
     } else {
       const attached = parts.files.length === 0 ? '' : '\n\nAttached files (read them): ' + parts.files.join(', ')
       await send({ session: selected, type: 'prompt', text: text + attached })
-      parts.sent.textContent = t('sent ✓')
+      parts.sent.textContent = tr('sent ✓')
     }
     parts.sent.className = 'sent'
     parts.prompt.value = ''
@@ -2086,11 +2086,11 @@ function askCard(state, ask, able) {
     for (const button of buttons) button.disabled = true
     try {
       await send({ session: selected, type: 'permission', id: ask.id, decision, ...extra })
-      parts.countdown.textContent = t(decision === 'allow' ? 'sent ✓' : 'denied')
+      parts.countdown.textContent = tr(decision === 'allow' ? 'sent ✓' : 'denied')
       parts.countdown.dataset.done = '1'
     } catch (error) {
       // Not sent: say so, and let the person try again
-      parts.countdown.textContent = t('not sent: {error} (try again, or answer in the terminal)', { error: error.message })
+      parts.countdown.textContent = tr('not sent: {error} (try again, or answer in the terminal)', { error: error.message })
       parts.countdown.dataset.done = '1'
       for (const button of buttons) button.disabled = !able || (button.classList.contains('allow') && blocked.length > 0)
     }
@@ -2108,10 +2108,10 @@ function askCard(state, ask, able) {
   parts.countdown = el('span', { className: 'note' })
   const body = []
   const buttons = []
-  if (ask.waiting > 0) body.push(el('div', { className: 'note', textContent: t('+{n} more waiting after this one', { n: ask.waiting }) }))
+  if (ask.waiting > 0) body.push(el('div', { className: 'note', textContent: tr('+{n} more waiting after this one', { n: ask.waiting }) }))
   if (ask.tool === 'AskUserQuestion' && ask.questions) {
     const chosen = {}
-    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), t(' asks you')))
+    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), tr(' asks you')))
     for (const question of ask.questions) {
       chosen[question.question] = new Set()
       const options = el('div', { className: 'row wrap' })
@@ -2129,20 +2129,20 @@ function askCard(state, ask, able) {
       }
       body.push(el('div', { className: 'question' }, el('div', { className: 'heading', textContent: plain(question.header) }), el('div', { textContent: plain(question.question) }), options))
     }
-    buttons.push(button(t('Answer'), 'allow', () => answer('allow', { answers: Object.fromEntries(Object.entries(chosen).filter(([, picked]) => picked.size > 0).map(([q, picked]) => [q, [...picked].join(', ')])) })()))
+    buttons.push(button(tr('Answer'), 'allow', () => answer('allow', { answers: Object.fromEntries(Object.entries(chosen).filter(([, picked]) => picked.size > 0).map(([q, picked]) => [q, [...picked].join(', ')])) })()))
   } else if (ask.tool === 'ExitPlanMode') {
-    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), t(' has a plan ready')))
+    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), tr(' has a plan ready')))
     if (ask.plan) {
       const seen = reveal(ask.plan)
       if (seen.hasHidden) blocked.push('hidden')
       body.push(el('div', { className: 'plan' }, markdown(seen.text)))
-    } else body.push(el('div', { className: 'note', textContent: t('The plan is shown in the terminal.') }))
-    buttons.push(button(t('Approve'), 'allow', answer('allow')), button(t('Approve + accept edits'), 'allow', answer('allow', { mode: 'acceptEdits' })), button(t('Keep planning'), 'deny', answer('deny')))
+    } else body.push(el('div', { className: 'note', textContent: tr('The plan is shown in the terminal.') }))
+    buttons.push(button(tr('Approve'), 'allow', answer('allow')), button(tr('Approve + accept edits'), 'allow', answer('allow', { mode: 'acceptEdits' })), button(tr('Keep planning'), 'deny', answer('deny')))
   } else {
-    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), t(' wants to use '), el('b', { textContent: plain(ask.tool) }), LANG === 'de' ? ' verwenden' : ''))
+    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), tr(' wants to use '), el('b', { textContent: plain(ask.tool) }), LANG === 'de' ? ' verwenden' : ''))
     // What the tool will really do: the file, the command with its flags, the edit's diff, or
     // its whole input
-    if (ask.filePath) body.push(el('div', { className: 'path' }, t('file: '), el('b', { textContent: plain(ask.filePath) })))
+    if (ask.filePath) body.push(el('div', { className: 'path' }, tr('file: '), el('b', { textContent: plain(ask.filePath) })))
     if (ask.command) body.push(shown(ask.command))
     for (const flag of ask.flags ?? []) body.push(el('div', { className: flag.startsWith('dangerouslyDisableSandbox') ? 'failed' : 'note', textContent: plain(flag) }))
     if (ask.diff) {
@@ -2150,17 +2150,17 @@ function askCard(state, ask, able) {
       if (seen.hasHidden) blocked.push('hidden')
       body.push(diffBlock(seen.text))
     } else if (ask.detail) body.push(shown(ask.detail, 'input'))
-    if (ask.canAlways && ask.rules?.length) body.push(el('div', { className: 'note' }, t('Always allow would add: '), ...ask.rules.map((rule) => el('div', { className: 'rule', textContent: plain(rule) }))))
+    if (ask.canAlways && ask.rules?.length) body.push(el('div', { className: 'note' }, tr('Always allow would add: '), ...ask.rules.map((rule) => el('div', { className: 'rule', textContent: plain(rule) }))))
     const allow = (text, extra) => button(text, 'allow', answer('allow', extra))
-    buttons.push(allow(t('Allow')))
-    if (ask.canAlways) buttons.push(allow(t('Always allow'), { always: true }))
-    if (ask.canAcceptEdits && EDIT_TOOLS.includes(ask.tool) && state.permissionMode === 'default') buttons.push(allow(t('Allow + accept edits'), { mode: 'acceptEdits' }))
-    buttons.push(button(t('Deny'), 'deny', answer('deny')))
+    buttons.push(allow(tr('Allow')))
+    if (ask.canAlways) buttons.push(allow(tr('Always allow'), { always: true }))
+    if (ask.canAcceptEdits && EDIT_TOOLS.includes(ask.tool) && state.permissionMode === 'default') buttons.push(allow(tr('Allow + accept edits'), { mode: 'acceptEdits' }))
+    buttons.push(button(tr('Deny'), 'deny', answer('deny')))
   }
   if (ask.isCut) blocked.push('cut')
   if (ask.leavesSandbox) blocked.push('sandbox')
-  const why = { cut: t('Too long to show whole here.'), hidden: t('It holds characters that hide or reorder text (shown as ⟨U+…⟩).'), sandbox: t('It would run outside the sandbox.') }
-  if (blocked.length > 0) body.push(el('div', { className: 'failed', textContent: blocked.map((one) => why[one]).join(' ') + t(' Here it can only be denied; read it, and allow it if you want, in the terminal.') }))
+  const why = { cut: tr('Too long to show whole here.'), hidden: tr('It holds characters that hide or reorder text (shown as ⟨U+…⟩).'), sandbox: tr('It would run outside the sandbox.') }
+  if (blocked.length > 0) body.push(el('div', { className: 'failed', textContent: blocked.map((one) => why[one]).join(' ') + tr(' Here it can only be denied; read it, and allow it if you want, in the terminal.') }))
   const card = el('div', { className: 'ask' }, ...body, el('div', { className: 'row wrap' }, ...buttons), parts.countdown)
   // A new card waits a moment before taking clicks, so a click meant for the one before it
   // never lands on it
@@ -2176,7 +2176,7 @@ function updatePanel() {
   if (!state) return
   const able = canControl(state)
   parts.dot.className = 'dot ' + statusOf(state)
-  parts.model.textContent = (state.model ?? t('model')) + ' ▾'
+  parts.model.textContent = (state.model ?? tr('model')) + ' ▾'
   parts.model.disabled = !able
   parts.end.disabled = !able || state.isEnding === true
   parts.move.disabled = !able
@@ -2185,14 +2185,14 @@ function updatePanel() {
   parts.prompt.disabled = !able
   parts.send.disabled = !able || parts.sending === true
   parts.stop.disabled = !able || !state.isWorking
-  if (!state.guest) parts.watchOnly.textContent = able ? '' : t(CAN_SEND ? 'This session cannot take commands yet.' : 'This window can only watch: open it with /workshop 3d where python3 is available to send commands.')
+  if (!state.guest) parts.watchOnly.textContent = able ? '' : tr(CAN_SEND ? 'This session cannot take commands yet.' : 'This window can only watch: open it with /workshop 3d where python3 is available to send commands.')
   // A guest: to watch only, and how to make it a room of its own
   if (state.guest && !parts.watchOnly.querySelector('.guest-note')) {
     parts.watchOnly.replaceChildren(
       el('div', { className: 'guest-note' },
-        el('b', { textContent: t('👁 A guest, to watch') }),
-        el('div', { textContent: t('This session started before the workshop was set up, so it runs without the mod: the window reads its transcript, but cannot prompt it, stop it or answer for it.') }),
-        el('div', {}, t('To use it from here, restart it in its folder with '), el('code', { textContent: 'claude --continue' }), t(' (the same conversation), or try '), el('code', { textContent: '/reload-plugins' }), t(' in it.')),
+        el('b', { textContent: tr('👁 A guest, to watch') }),
+        el('div', { textContent: tr('This session started before the workshop was set up, so it runs without the mod: the window reads its transcript, but cannot prompt it, stop it or answer for it.') }),
+        el('div', {}, tr('To use it from here, restart it in its folder with '), el('code', { textContent: 'claude --continue' }), tr(' (the same conversation), or try '), el('code', { textContent: '/reload-plugins' }), tr(' in it.')),
       ),
     )
   }
@@ -2203,7 +2203,7 @@ function updatePanel() {
   const ask = state.permission
   refill('ask', ask ? ask.id : '', () => (ask ? [askCard(state, ask, able)] : []))
   if (ask && parts.countdown && !parts.countdown.dataset.done) {
-    parts.countdown.textContent = t('{n} s, then the terminal asks', { n: Math.max(0, Math.round((ask.until - Date.now()) / 1000)) })
+    parts.countdown.textContent = tr('{n} s, then the terminal asks', { n: Math.max(0, Math.round((ask.until - Date.now()) / 1000)) })
   }
 
   // The todo list, as the model last wrote it
@@ -2242,7 +2242,7 @@ function updatePanel() {
         if (message.kind === 'notice') rows.push(el('div', { className: 'msg notice', textContent: '⚙ ' + message.text }))
         else if (message.kind === 'command') rows.push(el('div', { className: 'msg notice', textContent: '› ' + message.text }))
         else if (message.kind === 'output') rows.push(el('div', { className: 'msg notice output', textContent: message.text }))
-        else rows.push(el('div', { className: 'msg user' }, message.isFromWindow ? el('div', { className: 'tag', textContent: t('from the window') }) : null, el('div', { textContent: message.text })))
+        else rows.push(el('div', { className: 'msg user' }, message.isFromWindow ? el('div', { className: 'tag', textContent: tr('from the window') }) : null, el('div', { textContent: message.text })))
       } else {
         const tools = message.tools.length === 0 ? null : el('div', { className: 'tools' }, ...message.tools.map((use) => el('span', { className: 'pill', textContent: use.tool + (use.label && use.label !== use.tool ? ' · ' + use.label : '') })))
         if (!message.text.trim() && !tools) continue
@@ -2253,11 +2253,11 @@ function updatePanel() {
       rows.push(el('div', { className: 'msg command' }, el('div', { className: 'tag', textContent: clock(entry.at) + ' · ' + entry.command }), entry.text ? el('div', { className: 'note', textContent: entry.text }) : null))
     }
     if (state.isWorking) {
-      if (main?.isThinking) rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: t('thinking…') }), el('div', { className: 'thinking', textContent: live.thinking.slice(-600) })))
-      else if (live.text.trim()) rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: t('writing…') }), markdown(live.text)))
-      else rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: t('working…') })))
+      if (main?.isThinking) rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: tr('thinking…') }), el('div', { className: 'thinking', textContent: live.thinking.slice(-600) })))
+      else if (live.text.trim()) rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: tr('writing…') }), markdown(live.text)))
+      else rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: tr('working…') })))
     }
-    if (rows.length === 0) rows.push(el('div', { className: 'note', textContent: t('No messages yet.') }))
+    if (rows.length === 0) rows.push(el('div', { className: 'note', textContent: tr('No messages yet.') }))
     return rows
   })
   if (changed && atBottom) parts.scroll.scrollTop = parts.scroll.scrollHeight
@@ -2265,12 +2265,12 @@ function updatePanel() {
   if (more) {
     refill('edits', 'e' + more.version, () =>
       more.edits.length === 0
-        ? [el('div', { className: 'note', textContent: t('No edits yet.') })]
+        ? [el('div', { className: 'note', textContent: tr('No edits yet.') })]
         : [...more.edits].reverse().flatMap((edit) => [el('div', { className: 'heading', textContent: clock(edit.at) + ' · ' + edit.file }), diffBlock(edit.diff)]),
     )
   }
   refill('agents', JSON.stringify(state.agents.map((one) => [one.name, one.station, one.bubble])), () =>
-    state.agents.map((one) => el('div', { className: 'line' }, el('span', { textContent: '●', style: 'color:' + (/^#[0-9a-f]{6}$/i.test(one.color) ? one.color : '#8b8b96') }), el('span', { textContent: one.name }), el('span', { className: 'dim', textContent: t(one.station ?? 'idle') }), el('span', { textContent: one.bubble || '' }))),
+    state.agents.map((one) => el('div', { className: 'line' }, el('span', { textContent: '●', style: 'color:' + (/^#[0-9a-f]{6}$/i.test(one.color) ? one.color : '#8b8b96') }), el('span', { textContent: one.name }), el('span', { className: 'dim', textContent: tr(one.station ?? 'idle') }), el('span', { textContent: one.bubble || '' }))),
   )
   refill('calls', JSON.stringify(state.recentCalls), () =>
     [...(state.recentCalls ?? [])].reverse().map((call) => el('div', { className: 'line' }, el('span', { className: 'dim', textContent: clock(call.at) }), el('span', { className: call.result, textContent: call.tool }), el('span', { textContent: call.label }))),
@@ -2373,16 +2373,16 @@ function drawScreen(room, state, t) {
   let lines
   if (state.isEnding) {
     ctx.fillStyle = '#c8f7d0'
-    lines = [t('session ending…'), t('bye 👋')]
+    lines = [tr('session ending…'), tr('bye 👋')]
   } else if (isThinking) {
     ctx.fillStyle = '#8b8b96'
-    lines = [t('thinking…'), ...tailLines(live.thinking.replace(/\s+/g, ' '), 58, 4)]
+    lines = [tr('thinking…'), ...tailLines(live.thinking.replace(/\s+/g, ' '), 58, 4)]
   } else if (live.text.trim() !== '') {
     ctx.fillStyle = '#c8f7d0'
     lines = tailLines(live.text, 58, 5)
   } else {
     ctx.fillStyle = '#5f7a66'
-    lines = [t(state.isWorking ? 'working…' : 'idle'), ...(state.title ? [state.title] : [])]
+    lines = [tr(state.isWorking ? 'working…' : 'idle'), ...(state.title ? [state.title] : [])]
   }
   lines.forEach((line, i) => ctx.fillText(line, 22, 14 + i * 34))
   if (cursor && !isThinking) {
@@ -2640,8 +2640,8 @@ const TOUR_DEMOS = {
 // A demo in the window's language
 function tourDemo(name) {
   const demo = structuredClone(TOUR_DEMOS[name])
-  if (demo.plan) demo.plan = t(demo.plan)
-  for (const question of demo.questions ?? []) Object.assign(question, { question: t(question.question), header: t(question.header) })
+  if (demo.plan) demo.plan = tr(demo.plan)
+  for (const question of demo.questions ?? []) Object.assign(question, { question: tr(question.question), header: tr(question.header) })
   return demo
 }
 const SPOTS = {
@@ -2675,7 +2675,7 @@ function showStep(i) {
   // The tours' own words, written here: never anything a session said
   document.getElementById('tour-text').innerHTML = words.steps[i][1]
   document.getElementById('tour-back').disabled = i === 0
-  document.getElementById('tour-next').textContent = t(i === steps.length - 1 ? 'Done' : 'Next')
+  document.getElementById('tour-next').textContent = tr(i === steps.length - 1 ? 'Done' : 'Next')
   document.getElementById('tour-never').hidden = tourName !== 'main'
   tourBox.classList.add('open')
   for (const lit of document.querySelectorAll('.glow')) lit.classList.remove('glow')
@@ -2707,7 +2707,7 @@ function showStep(i) {
     if (state) {
       parts.ask.replaceChildren(askCard(state, tourDemo(step.demo), false))
       parts.keys.ask = 'demo'
-      parts.countdown.textContent = t('an example; nothing is asked')
+      parts.countdown.textContent = tr('an example; nothing is asked')
       parts.countdown.dataset.done = '1'
     }
   } else if (parts.keys?.ask === 'demo') {
@@ -2765,7 +2765,7 @@ document.getElementById('help').onclick = () => {
       settings.tour = box.checked ? 'show' : 'never'
       send({ session: '_window', type: 'set-tour', value: settings.tour }).catch(() => {})
     }
-    toursMenu.append(el('label', { className: 'row note item' }, box, t('Show the main tour when the window opens')))
+    toursMenu.append(el('label', { className: 'row note item' }, box, tr('Show the main tour when the window opens')))
   }
   toursMenu.classList.toggle('open')
 }
@@ -2816,15 +2816,15 @@ function setLang(next, isChosen = false) {
 }
 function relabel() {
   document.documentElement.lang = LANG
-  for (const node of document.querySelectorAll('[data-t]')) node.textContent = t(node.dataset.t)
-  for (const node of document.querySelectorAll('[data-t-title]')) node.title = t(node.dataset.tTitle)
+  for (const node of document.querySelectorAll('[data-t]')) node.textContent = tr(node.dataset.t)
+  for (const node of document.querySelectorAll('[data-t-title]')) node.title = tr(node.dataset.tTitle)
   document.getElementById('lang').textContent = LANG.toUpperCase()
   // The 3D words: signs, station names, the lift's and the stairs' signs, the dashed rooms
   for (const room of rooms.values()) {
     room.signKey = ''
     room.screen.key = ''
     for (const [id, station] of Object.entries(room.stations)) {
-      const name = label(t(id), { color: '#8b8b96', size: 30 })
+      const name = label(tr(id), { color: '#8b8b96', size: 30 })
       name.position.copy(station.label.position)
       room.group.remove(station.label)
       dispose(station.label)
@@ -2905,7 +2905,7 @@ function watchMail(live) {
         if (send && sameWords(send.text, delivery.text)) break
       }
       if (send) pairedSends.add(send.id)
-      sendCourier(from ? rooms.get(from.id) : null, to, from?.project ?? t('outside'), state.project)
+      sendCourier(from ? rooms.get(from.id) : null, to, from?.project ?? tr('outside'), state.project)
     }
   }
 }
@@ -2949,7 +2949,7 @@ function sendCourier(fromRoom, toRoom, fromName, toName) {
       path.push(ringPoint(fromRoom.place.arm, fromY), new THREE.Vector3(0, fromY, 0), new THREE.Vector3(0, toY, 0), ringPoint(toRoom.place.arm, toY))
     }
     const sender = fromRoom.agents.get('main')
-    if (sender) sender.note = { text: t('📤 to {name}', { name: toName }), until: frameClock.elapsedTime + 4 }
+    if (sender) sender.note = { text: tr('📤 to {name}', { name: toName }), until: frameClock.elapsedTime + 4 }
   } else {
     // From outside the building: up the lift
     path.push(new THREE.Vector3(0, toY, 0), ringPoint(toRoom.place.arm, toY))
@@ -2963,7 +2963,7 @@ function sendCourier(fromRoom, toRoom, fromName, toName) {
   const g = group(block(0.7, 0.45, 0.45, body, 0, 0.22, 0), block(0.08, 0.14, 0.02, INK, -0.13, 0.5, 0.23), block(0.08, 0.14, 0.02, INK, 0.13, 0.5, 0.23), ...legs, envelope)
   g.position.copy(path[0])
   scene.add(g)
-  couriers.push({ group: g, legs, envelope, path, leg: 1, toRoom, note: t('📨 from {name}', { name: fromName }) })
+  couriers.push({ group: g, legs, envelope, path, leg: 1, toRoom, note: tr('📨 from {name}', { name: fromName }) })
 }
 function moveCouriers(dt, t) {
   for (const courier of [...couriers]) {
