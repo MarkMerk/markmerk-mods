@@ -87,6 +87,8 @@ let contextPercent = null
 // What /avatar set: saved in the store, so it lasts between sessions
 let isHidden = false
 let isMuted = false
+// True after /avatar stay: the avatar keeps its spot and runs on the spot
+let isPinned = false
 // The subagents working now, by id
 let agents = new Set()
 // The game of tennis. The ball: its column in the scene, which way it flies,
@@ -330,6 +332,9 @@ function bubble() {
 }
 
 function step() {
+  frame = (frame + 1) % LEGS.length
+  // Pinned: the legs move, the avatar doesn't
+  if (isPinned) return
   const max = Math.max(0, columns - WIDTH)
   x += direction
   // Turn around at either edge
@@ -340,7 +345,6 @@ function step() {
     x = 0
     direction = 1
   }
-  frame = (frame + 1) % LEGS.length
 }
 
 // One tick of the clock: move the avatar as its mood says
@@ -363,7 +367,8 @@ function tick() {
     idleTicks += 1
     // A slow stroll
     if (ticks % 3 === 0) step()
-    if (!hasPlayed && idleTicks > TENNIS_AFTER_TICKS && sceneWidth() > 0) startTennis(TENNIS_TICKS)
+    // A pinned avatar doesn't wander off to a court by itself
+    if (!hasPlayed && !isPinned && idleTicks > TENNIS_AFTER_TICKS && sceneWidth() > 0) startTennis(TENNIS_TICKS)
     else if (idleTicks > SLEEPY_TICKS) {
       setMood('asleep')
       // A subagent whose end was missed doesn't run beside a sleeper
@@ -383,12 +388,13 @@ export function register(on) {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'avatar',
-      description: 'Hide or show the avatar, mute its chime, start a game of tennis, or make it jump',
-      argumentHint: '[hide|show|mute|unmute|tennis|jump]',
+      description: 'Hide or show the avatar, mute its chime, keep it in place, start a game of tennis, or make it jump',
+      argumentHint: '[hide|show|mute|unmute|stay|roam|tennis|jump]',
       immediate: true,
     })
     isHidden = (await $.store.get('isHidden')) === true
     isMuted = (await $.store.get('isMuted')) === true
+    isPinned = (await $.store.get('isPinned')) === true
     $.clock.every(TICK_MS, () => {
       tick()
       if (isHidden) return
@@ -406,6 +412,11 @@ export function register(on) {
       await $.store.set('isMuted', isMuted)
       return { text: isMuted ? 'chime muted' : 'chime on' }
     }
+    if (arg === 'stay' || arg === 'roam') {
+      isPinned = arg === 'stay'
+      await $.store.set('isPinned', isPinned)
+      return { text: isPinned ? 'avatar stays put' : 'avatar roams' }
+    }
     if (arg === 'jump') {
       poke()
       $.ui.invalidate('ui.render')
@@ -419,7 +430,7 @@ export function register(on) {
       return { text: mood === 'tennis' ? 'game on' : 'game over' }
     }
     if (arg !== '' && arg !== 'hide' && arg !== 'show') {
-      return { text: 'usage: /avatar [hide|show|mute|unmute|tennis|jump]' }
+      return { text: 'usage: /avatar [hide|show|mute|unmute|stay|roam|tennis|jump]' }
     }
     isHidden = arg === '' ? !isHidden : arg === 'hide'
     await $.store.set('isHidden', isHidden)

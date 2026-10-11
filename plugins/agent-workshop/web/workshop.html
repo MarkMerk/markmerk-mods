@@ -1,0 +1,2755 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent workshop</title>
+<style>
+  :root { color-scheme: dark; --panel: rgba(30, 29, 37, 0.94); --line: #34323e; --dim: #8b8b96; --text: #e8e2d0; --accent: #d97757; }
+  html, body { margin: 0; height: 100%; background: #16151b; overflow: hidden; font: 13px ui-monospace, Menlo, monospace; color: var(--text); }
+  canvas { display: block; }
+  button, textarea, input { font: inherit; color: inherit; }
+  #hud { position: fixed; top: 12px; left: 14px; right: 380px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+  #title { display: flex; gap: 10px; align-items: baseline; }
+  #title .chip:first-of-type { margin-left: auto; }
+  #title b { font-weight: 600; }
+  .dim { color: var(--dim); }
+  #rooms, #floors { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { pointer-events: auto; cursor: pointer; display: flex; gap: 7px; align-items: center; padding: 4px 9px; border-radius: 7px; background: rgba(40, 38, 48, 0.85); border: 1px solid var(--line); }
+  .chip:hover { border-color: #6b6b76; }
+  .chip.focused { border-color: var(--accent); }
+  .tag { color: var(--dim); font-size: 11px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #6b6b76; flex: none; }
+  .dot.working { background: #3fb950; box-shadow: 0 0 6px #3fb950; }
+  .dot.waiting { background: #e3b341; box-shadow: 0 0 6px #e3b341; }
+  #hint { position: fixed; bottom: 10px; left: 14px; color: var(--dim); background: rgba(22, 21, 27, 0.75); padding: 3px 8px; border-radius: 6px; pointer-events: none; }
+  #offline { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(22, 21, 27, 0.6); color: var(--dim); pointer-events: none; }
+  #panel { position: fixed; top: 10px; right: 10px; bottom: 10px; width: 400px; display: none; flex-direction: column; gap: 10px; padding: 14px; box-sizing: border-box; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  #panel .top { display: flex; flex-direction: column; gap: 8px; flex: none; max-height: 55%; overflow-y: auto; position: relative; }
+  #panel .scroll { flex: 1; overflow-y: auto; min-height: 80px; }
+  #panel .composer { flex: none; display: flex; flex-direction: column; gap: 6px; position: relative; }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--line); background: #24232c; font-size: 11px; color: var(--text); white-space: nowrap; }
+  button.pill { cursor: pointer; }
+  .menu { position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: 4px; max-height: 260px; overflow-y: auto; background: #1f1e26; border: 1px solid #4a4756; border-radius: 8px; padding: 4px; z-index: 5; }
+  .menu.small { position: static; max-height: none; }
+  .menu .item { display: flex; gap: 10px; width: 100%; text-align: left; padding: 5px 8px; border: 0; border-radius: 5px; background: none; cursor: pointer; white-space: nowrap; overflow: hidden; }
+  .menu .item span:last-child { overflow: hidden; text-overflow: ellipsis; }
+  .menu .item.on, .menu .item:hover { background: #2f2d38; }
+  .row.wrap { flex-wrap: wrap; }
+  .chat { display: flex; flex-direction: column; gap: 10px; }
+  .msg { display: flex; flex-direction: column; gap: 4px; }
+  .msg.user { align-self: flex-end; max-width: 88%; background: #2a2833; border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.45 -apple-system, system-ui, sans-serif; }
+  .msg.command { border-left: 2px solid var(--line); padding-left: 8px; }
+  .guest-note { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid #4f8a8f; background: rgba(47, 93, 98, 0.18); border-radius: 10px; font: 12px/1.45 -apple-system, system-ui, sans-serif; }
+  .guest-note code { font: 11px ui-monospace, Menlo, monospace; background: #1b1a21; padding: 1px 4px; border-radius: 4px; }
+  .msg.notice { color: var(--dim); font-size: 12px; border-left: 2px solid var(--line); padding-left: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .msg.notice.output { font: 12px ui-monospace, Menlo, monospace; max-height: 120px; overflow-y: auto; }
+  .msg .tag, .tag { color: var(--dim); font-size: 11px; }
+  .tools { display: flex; flex-wrap: wrap; gap: 4px; }
+  .todos { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font: 12px/1.4 -apple-system, system-ui, sans-serif; }
+  .todo { display: flex; gap: 7px; }
+  .todo.completed { color: var(--dim); text-decoration: line-through; }
+  .todo.in_progress { font-weight: 600; }
+  .plan { max-height: 300px; overflow-y: auto; background: #1b1a21; border-radius: 6px; padding: 4px 10px; }
+  .question { display: flex; flex-direction: column; gap: 4px; }
+  .button.option.on { border-color: var(--accent); background: rgba(217, 119, 87, 0.2); }
+  label.row { cursor: pointer; }
+  #help { pointer-events: auto; cursor: pointer; }
+  #close + #end + #move { margin-left: 4px; }
+  #close { order: 0; }
+  #move { margin-left: 4px; background: none; border: 1px solid var(--line); border-radius: 6px; color: var(--dim); cursor: pointer; padding: 0 6px; }
+  #move:hover:not(:disabled) { color: var(--text); border-color: #6b6b76; }
+  #end { margin-left: 0; background: none; border: 1px solid var(--line); border-radius: 6px; color: var(--dim); cursor: pointer; padding: 0 6px; }
+  #end:hover:not(:disabled) { color: #e5484d; border-color: #e5484d; }
+  .confirm { border: 1px solid #e5484d; background: rgba(229, 72, 77, 0.08); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .toast { position: fixed; top: 54px; left: 50%; transform: translateX(-50%); max-width: 520px; padding: 9px 14px; background: var(--panel); border: 1px solid #e5484d; border-radius: 10px; z-index: 30; font: 13px -apple-system, system-ui, sans-serif; }
+  .projects .item { flex-direction: column; gap: 0; align-items: flex-start; }
+  .projects .item span:last-child { font-size: 11px; }
+  #placing { position: fixed; left: 50%; bottom: 46px; transform: translateX(-50%); display: none; gap: 12px; align-items: center; padding: 10px 14px; background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; z-index: 15; font: 13px -apple-system, system-ui, sans-serif; }
+  #placing.open { display: flex; }
+  #tour { position: fixed; left: 50%; bottom: 46px; transform: translateX(-50%); width: min(520px, calc(100vw - 32px)); display: none; flex-direction: column; gap: 8px; padding: 14px 16px; box-sizing: border-box; background: var(--panel); border: 1px solid var(--accent); border-radius: 12px; z-index: 20; font: 13px/1.5 -apple-system, system-ui, sans-serif; }
+  #tour.open { display: flex; }
+  #tour h3 { margin: 0; font: 600 15px -apple-system, system-ui, sans-serif; color: var(--text); text-transform: none; letter-spacing: 0; }
+  #tour .step { color: var(--dim); font: 11px ui-monospace, Menlo, monospace; }
+  #tour p { margin: 0; color: #d6d0bf; }
+  #tour kbd { font: 11px ui-monospace, Menlo, monospace; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: #24232c; }
+  #tour .row { justify-content: flex-end; }
+  #tour .row .skip { margin-right: auto; }
+  #tours { position: fixed; top: 44px; right: 14px; bottom: auto; left: auto; width: 300px; display: none; z-index: 20; }
+  #tours.open { display: block; }
+  #tours .item { white-space: normal; }
+  .glow { outline: 2px solid var(--accent) !important; outline-offset: 2px; border-radius: 6px; animation: glow 1.2s ease-in-out infinite; }
+  @keyframes glow { 50% { outline-color: rgba(217, 119, 87, 0.25); } }
+  #panel.open { display: flex; }
+  #panel h2 { margin: 0; font-size: 15px; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+  #panel h2 > span:not(.dot):not(.pill) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
+  #panel h2 .pill { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  #panel h3 { margin: 0 0 6px; font-size: 11px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; }
+  #close { margin-left: auto; background: none; border: 1px solid var(--line); border-radius: 6px; color: var(--dim); cursor: pointer; font-size: 14px; padding: 0 6px; }
+  #close:hover { color: var(--text); border-color: #6b6b76; }
+  .path { color: var(--dim); font-size: 11px; word-break: break-all; }
+  textarea, input[type=text] { width: 100%; box-sizing: border-box; background: #1b1a21; border: 1px solid var(--line); border-radius: 8px; padding: 8px; resize: vertical; }
+  textarea { min-height: 70px; }
+  textarea:focus, input:focus { outline: none; border-color: #6b6b76; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .button { cursor: pointer; padding: 6px 12px; border-radius: 7px; border: 1px solid var(--line); background: #2a2833; }
+  .button:hover:not(:disabled) { border-color: #6b6b76; }
+  .button:disabled { opacity: 0.4; cursor: default; }
+  .button.primary { background: var(--accent); border-color: var(--accent); color: #16161c; font-weight: 600; }
+  .button.allow { background: #3fb950; border-color: #3fb950; color: #16161c; font-weight: 600; }
+  .button.deny { background: #e5484d; border-color: #e5484d; color: #16161c; font-weight: 600; }
+  .ask { border: 1px solid #e3b341; background: rgba(227, 179, 65, 0.1); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .ask code.input { white-space: pre-wrap; }
+  .ask .rule { font: 11px ui-monospace, Menlo, monospace; color: var(--text); }
+  .ask code { word-break: break-all; display: block; background: #1b1a21; padding: 6px 8px; border-radius: 6px; white-space: pre-wrap; word-break: break-all; }
+  .note { color: var(--dim); font-size: 12px; }
+  .sent { color: #3fb950; font-size: 12px; }
+  .list { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+  .list .line { display: flex; gap: 8px; white-space: nowrap; overflow: hidden; }
+  .list .line span:last-child { overflow: hidden; text-overflow: ellipsis; }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+  .tab { cursor: pointer; padding: 5px 10px; border: 0; background: none; color: var(--dim); border-bottom: 2px solid transparent; }
+  .tab.on { color: var(--text); border-bottom-color: var(--accent); }
+  .md { font: 13px/1.5 -apple-system, system-ui, sans-serif; overflow-wrap: anywhere; }
+  .md pre { background: #1b1a21; padding: 8px; border-radius: 6px; overflow-x: auto; font: 12px ui-monospace, Menlo, monospace; }
+  .md code { font: 12px ui-monospace, Menlo, monospace; background: #1b1a21; padding: 1px 4px; border-radius: 4px; }
+  .md pre code { background: none; padding: 0; }
+  .md p, .md ul, .md ol { margin: 6px 0; }
+  .md h1, .md h2, .md h3 { font-size: 14px; margin: 10px 0 4px; }
+  .answer { border-top: 1px solid var(--line); padding-top: 8px; }
+  .answer summary { cursor: pointer; color: var(--dim); }
+  .asked { color: var(--dim); font-style: italic; margin: 4px 0; white-space: pre-wrap; }
+  .thinking { color: var(--dim); font-style: italic; white-space: pre-wrap; }
+  .ask .diff { white-space: pre-wrap; word-break: break-all; }
+  .diff { background: #1b1a21; padding: 8px; border-radius: 6px; overflow-x: auto; font: 12px ui-monospace, Menlo, monospace; white-space: pre; margin: 4px 0 10px; }
+  .diff .add { color: #3fb950; } .diff .del { color: #e5484d; }
+  .heading { color: var(--dim); font-size: 12px; }
+  #titles { pointer-events: auto; cursor: pointer; }
+  #confirm { position: fixed; top: 46px; right: 380px; width: 300px; display: none; flex-direction: column; gap: 10px; padding: 12px; background: var(--panel); border: 1px solid #e3b341; border-radius: 10px; }
+  #confirm.open { display: flex; }
+  .ok { color: #3fb950; } .failed, .blocked { color: #e5484d; } .running { color: #e3b341; }
+</style>
+</head>
+<body>
+<div id="hud">
+  <div id="title"><b>agent workshop</b><span class="dim" id="count"></span><button id="titles" class="chip" style="display:none"></button><button id="help" class="chip" title="Take the tour">?</button></div>
+  <div id="floors"></div>
+  <div id="rooms"></div>
+</div>
+<div id="hint">drag to move · right-drag to turn · scroll to zoom · arrows or WASD to walk · click a room to open it</div>
+<div id="offline">waiting for Claude Code…</div>
+<div id="panel"></div>
+<div id="placing"><span id="placing-text"></span><button class="button" id="placing-cancel">Cancel</button></div>
+<div id="tours" class="menu"></div>
+<div id="tour"><div class="step" id="tour-step"></div><h3 id="tour-title"></h3><p id="tour-text"></p><div class="row"><label class="note row skip" id="tour-never"><input type="checkbox" id="tour-never-box">Don't show this again</label><button class="button" id="tour-skip">Close</button><button class="button" id="tour-back">Back</button><button class="button primary" id="tour-next">Next</button></div></div>
+<div id="confirm">
+  <b>Turn titles on?</b>
+  <div class="note">At the start of every turn, in every session, its prompt goes to Haiku for a 3–6 word title on the room's sign. That is one small extra request a turn, and it costs tokens.</div>
+  <div class="row"><button class="button primary" id="confirm-on">Turn on</button><button class="button" id="confirm-off">Cancel</button></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" integrity="sha384-wagZhIFgY4hD+7awjQjR4e2E294y6J2HSnd8eTNc15ZubTeQeVRZwhQJ+W6hnBsf" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js" integrity="sha384-QsSpx6a0USazT7nK7w8qXDgpSAPhFsb2XtpoLFQ5+X2yFN6hvCKnwEzN8M5FWaJb" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.16/purify.min.js" integrity="sha384-a7SzOxErzJ3ZpQz0zJ32d67dSitNzPcbfybc/ykU9KJhMgZkwqfSxlhhdJRS+XGL" crossorigin="anonymous"></script>
+<script nonce="__WORKSHOP_NONCE__">
+// The workshop in 3D, for every Claude Code session running the agent-workshop mod. Each session
+// writes its state into sessions/<id>.js beside this page and lists the live ones in index.js;
+// the page loads them again and again and keeps a room for each, its agents walking between the
+// stations, working at them, and coming and going by the door. Served by the mod's own server,
+// the page also sends commands back: prompts, stops, permission answers and new sessions.
+
+// The token the server writes into the page; served as a file, the page can only watch
+// The token the server gives this page once, for the one-time key the session left beside the
+// launcher (in the address's fragment, which never reaches the server or a command line); kept
+// for this tab alone, so a reload keeps it. No token: the page can only watch
+let TOKEN = ''
+let CAN_SEND = false
+async function claimToken() {
+  if (location.protocol !== 'http:') return
+  try {
+    TOKEN = sessionStorage.getItem('workshop-token') ?? ''
+  } catch {
+    TOKEN = ''
+  }
+  const key = new URLSearchParams(location.hash.slice(1)).get('k')
+  if (key) {
+    history.replaceState(null, '', location.pathname)
+    const response = await fetch('claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) }).catch(() => null)
+    if (response && response.ok) TOKEN = (await response.json()).token ?? ''
+    try {
+      sessionStorage.setItem('workshop-token', TOKEN)
+    } catch {
+      // Without storage a reload needs /workshop 3d again
+    }
+  }
+  CAN_SEND = /^[0-9a-f]{64}$/.test(TOKEN)
+}
+
+// A room's size, the wall between two rooms, the corridors, and the height of a floor
+const W = 14
+const D = 9
+const WALL = 3.6
+const GAP = 1.4
+const HALL = 4.5
+const FLOOR_H = 8
+const AISLE = 3.7
+const DOOR_X = 1.3
+const SPEED = 2.6
+// How the rooms grow: three along one side of a corridor, then three facing them; then more
+// corridors from a hall in the middle, east, west, north and south; then floors above and below
+const PER_SIDE = 3
+const ARMS = [[1, 0], [-1, 0], [0, -1], [0, 1]]
+const PER_FLOOR = ARMS.length * PER_SIDE * 2
+// How long a session may go quiet before its room is taken away, and the page counts as offline
+const GONE_MS = 15000
+const OFFLINE_MS = 6000
+// How long a session sits idle before its Claude lies down on the rug and sleeps
+const SLEEP_MS = 40000
+const STATIONS = ['shell', 'files', 'edit', 'web', 'mcp', 'agents']
+const HOOK_COLORS = { tool: '#E3B341', fail: '#E5484D', ask: '#F0883E', agent: '#B48EAD', turn: '#3FB950', other: '#6A9BCC' }
+
+// The renderer, and a camera that moves over the floors like a map
+const renderer = new THREE.WebGLRenderer({ antialias: true })
+renderer.setPixelRatio(window.devicePixelRatio)
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+renderer.outputEncoding = THREE.sRGBEncoding
+document.body.appendChild(renderer.domElement)
+const scene = new THREE.Scene()
+scene.background = new THREE.Color(0x16151b)
+scene.fog = new THREE.Fog(0x16151b, 60, 130)
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 160)
+const controls = new THREE.MapControls(camera, renderer.domElement)
+controls.enableDamping = true
+controls.screenSpacePanning = false
+controls.maxPolarAngle = Math.PI * 0.47
+controls.minDistance = 5
+controls.maxDistance = 60
+scene.add(new THREE.HemisphereLight(0xdfe6ff, 0x3a2e24, 0.55))
+// The sun follows the view, so the rooms in sight always have their shadows
+const sun = new THREE.DirectionalLight(0xfff1dc, 0.85)
+sun.castShadow = true
+sun.shadow.mapSize.set(2048, 2048)
+Object.assign(sun.shadow.camera, { left: -18, right: 18, top: 18, bottom: -18, near: 1, far: 60 })
+sun.shadow.bias = -0.0008
+scene.add(sun, sun.target)
+
+// Colors are written as they look; the renderer works in linear light
+function srgb(color) {
+  return new THREE.Color(color).convertSRGBToLinear()
+}
+function material(color, extra = {}) {
+  return new THREE.MeshStandardMaterial({ color: srgb(color), roughness: 0.8, metalness: 0.05, ...extra })
+}
+function glow(color, intensity = 1) {
+  return new THREE.MeshStandardMaterial({ color: srgb(color), emissive: srgb(color), emissiveIntensity: intensity, roughness: 0.4 })
+}
+// A box `w` by `h` by `d` whose bottom sits at `y`
+function block(w, h, d, mat, x = 0, y = 0, z = 0) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat)
+  mesh.position.set(x, y + h / 2, z)
+  mesh.castShadow = true
+  mesh.receiveShadow = true
+  return mesh
+}
+function group(...children) {
+  const g = new THREE.Group()
+  for (const child of children) g.add(child)
+  return g
+}
+
+// Text drawn on a canvas, as a sprite that always faces the camera
+function label(text, { color = '#e8e2d0', background = null, size = 34, scale = 0.011, dot = null } = {}) {
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  const font = `600 ${size}px ui-monospace, Menlo, monospace`
+  ctx.font = font
+  const lead = dot ? size * 0.9 : 0
+  const width = Math.ceil(ctx.measureText(text).width) + lead + (background ? 36 : 8)
+  canvas.width = width
+  canvas.height = size + 22
+  ctx.font = font
+  if (background) {
+    ctx.fillStyle = background
+    const r = 14
+    ctx.beginPath()
+    ctx.moveTo(r, 0); ctx.arcTo(width, 0, width, canvas.height, r); ctx.arcTo(width, canvas.height, 0, canvas.height, r)
+    ctx.arcTo(0, canvas.height, 0, 0, r); ctx.arcTo(0, 0, width, 0, r); ctx.fill()
+  }
+  if (dot) {
+    ctx.fillStyle = dot
+    ctx.beginPath()
+    ctx.arc((background ? 18 : 4) + size * 0.3, canvas.height / 2, size * 0.25, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.fillStyle = color
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, (background ? 18 : 4) + lead, canvas.height / 2 + 1)
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.encoding = THREE.sRGBEncoding
+  texture.anisotropy = 4
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true }))
+  sprite.scale.set(canvas.width * scale, canvas.height * scale, 1)
+  sprite.renderOrder = 10
+  return sprite
+}
+function dispose(sprite) {
+  sprite.material.map.dispose()
+  sprite.material.dispose()
+}
+
+// Planks for the rooms' floors, tiles for the corridors'
+function planks() {
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = 512
+  const ctx = canvas.getContext('2d')
+  const tones = ['#6b5541', '#735b46', '#664f3c', '#6f5843']
+  for (let row = 0; row < 16; row++) {
+    let x = -((row * 97) % 180)
+    while (x < 512) {
+      const length = 140 + ((row * 31 + x) % 120)
+      ctx.fillStyle = tones[(row + Math.abs(x)) % tones.length]
+      ctx.fillRect(x, row * 32, length - 2, 30)
+      x += length
+    }
+  }
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+  texture.repeat.set(W / 4, D / 4)
+  texture.encoding = THREE.sRGBEncoding
+  return texture
+}
+function tiles() {
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = 256
+  const ctx = canvas.getContext('2d')
+  for (let y = 0; y < 4; y++) {
+    for (let x = 0; x < 4; x++) {
+      ctx.fillStyle = (x + y) % 2 === 0 ? '#5d5a66' : '#55525e'
+      ctx.fillRect(x * 64, y * 64, 63, 63)
+    }
+  }
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+  texture.encoding = THREE.sRGBEncoding
+  return texture
+}
+const PLANKS = planks()
+const TILES = tiles()
+
+// The stations, each a group with a tick(isBusy, t) that animates it
+const WOOD = material(0x9a7a55)
+const WOOD_DARK = material(0x6b5038)
+const INK = material(0x16161c, { roughness: 0.5 })
+const METAL = material(0x8a8f99, { metalness: 0.4, roughness: 0.5 })
+function desk(width = 2.0, height = 0.8, depth = 0.9) {
+  const g = group(block(width, 0.08, depth, WOOD, 0, height - 0.08, 0))
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(block(0.08, height - 0.08, 0.08, WOOD_DARK, sx * (width / 2 - 0.08), 0, sz * (depth / 2 - 0.08)))
+  return g
+}
+function makeShell() {
+  const screenCanvas = document.createElement('canvas')
+  screenCanvas.width = 128
+  screenCanvas.height = 80
+  const screenTexture = new THREE.CanvasTexture(screenCanvas)
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.96, 0.6), new THREE.MeshBasicMaterial({ map: screenTexture }))
+  screen.position.set(0, 1.38, -0.11)
+  const g = group(desk(), block(1.1, 0.72, 0.08, INK, 0, 1.02, -0.16), screen, block(0.1, 0.22, 0.08, INK, 0, 0.8, -0.16), block(0.8, 0.03, 0.22, material(0x55555f), 0, 0.8, 0.15))
+  let lines = []
+  let shown = ''
+  g.tick = (isBusy, t) => {
+    if (isBusy && Math.random() < 0.3) lines = [...lines, 10 + Math.random() * 90].slice(-6)
+    const cursor = Math.floor(t * 2) % 2 === 0
+    const key = lines.join() + cursor
+    if (key === shown) return
+    shown = key
+    const ctx = screenCanvas.getContext('2d')
+    ctx.fillStyle = '#10241a'
+    ctx.fillRect(0, 0, 128, 80)
+    ctx.fillStyle = '#3fb950'
+    lines.forEach((length, i) => ctx.fillRect(8, 8 + i * 11, length, 5))
+    if (cursor) ctx.fillRect(8, 8 + lines.length * 11, 8, 6)
+    screenTexture.needsUpdate = true
+  }
+  return g
+}
+function makeFiles() {
+  const g = group(block(2.0, 2.3, 0.08, WOOD_DARK, 0, 0, -0.26), block(0.06, 2.3, 0.6, WOOD, -0.97, 0, 0), block(0.06, 2.3, 0.6, WOOD, 0.97, 0, 0))
+  const colors = [0xe5484d, 0x6a9bcc, 0xe3b341, 0x7fb069, 0xb48ead, 0xd97757, 0x4fb3bf].map((c) => material(c))
+  const books = []
+  for (const [shelf, y] of [0.04, 0.78, 1.52, 2.26].entries()) {
+    g.add(block(1.9, 0.05, 0.56, WOOD, 0, y, 0))
+    if (shelf === 3) continue
+    let x = -0.88
+    for (let i = 0; x < 0.8; i++) {
+      const width = 0.08 + ((shelf * 7 + i * 3) % 5) * 0.025
+      const height = 0.45 + ((shelf * 5 + i * 11) % 4) * 0.06
+      const book = block(width - 0.01, height, 0.42, colors[(shelf * 3 + i) % colors.length], x + width / 2, y + 0.05, 0)
+      books.push(book)
+      g.add(book)
+      x += width
+    }
+  }
+  let pulled = null
+  g.tick = (isBusy, t) => {
+    const index = isBusy ? Math.floor(t * 1.5) % books.length : -1
+    const next = index >= 0 ? books[(index * 7) % books.length] : null
+    if (pulled !== next) {
+      if (pulled) pulled.position.z = 0
+      pulled = next
+    }
+    if (pulled) pulled.position.z = 0.12 + Math.sin(t * 6) * 0.04
+  }
+  return g
+}
+function makeEdit() {
+  // No real lights in the rooms: every light is another pass over every lit surface, and a
+  // building of rooms would have dozens. A lit lamp glows, and so does the paper under it
+  const pool = block(0.9, 0.004, 0.65, glow(0xf6e6b0, 0.6), -0.3, 0.812, 0.05)
+  pool.visible = false
+  const head = block(0.36, 0.14, 0.22, material(0x55555f), 0.55, 1.45, -0.15)
+  const pencil = block(0.3, 0.03, 0.03, material(0xe3b341), 0.1, 0.81, 0.15)
+  pencil.rotation.y = 0.5
+  const g = group(desk(), block(0.75, 0.01, 0.55, material(0xe8e2d0), -0.35, 0.8, 0.05), pencil, block(0.06, 0.7, 0.06, material(0x55555f), 0.75, 0.8, -0.3), head, pool)
+  for (let i = 0; i < 4; i++) g.add(block(0.5 - (i % 2) * 0.15, 0.005, 0.03, INK, -0.4, 0.812, -0.12 + i * 0.09))
+  g.tick = (isBusy, t) => {
+    pool.visible = isBusy
+    head.material.emissive.copy(srgb(isBusy ? 0x6a5420 : 0x000000))
+    pencil.position.x = 0.1 + (isBusy ? Math.sin(t * 9) * 0.1 : 0)
+    pencil.position.z = 0.15 + (isBusy ? Math.cos(t * 13) * 0.05 : 0)
+  }
+  return g
+}
+function makeWeb() {
+  const dish = new THREE.Mesh(new THREE.SphereGeometry(0.42, 24, 12, 0, Math.PI * 2, 0, Math.PI / 3.2), material(0xc9ced6, { side: THREE.DoubleSide, metalness: 0.3 }))
+  dish.position.set(-0.35, 1.45, 0)
+  dish.castShadow = true
+  const tip = block(0.1, 0.1, 0.1, glow(0x555555, 0.2), 0.45, 1.75, -0.1)
+  const g = group(desk(1.6, 0.7), block(0.8, 0.32, 0.5, METAL, 0, 0.7, 0), block(0.04, 0.75, 0.04, METAL, 0.45, 1.0, -0.1), tip, dish, block(0.06, 0.4, 0.06, METAL, -0.35, 1.02, 0))
+  g.tick = (isBusy, t) => {
+    dish.rotation.x = -1.0 + (isBusy ? Math.sin(t * 2) * 0.15 : 0)
+    dish.rotation.z = isBusy ? Math.sin(t * 1.3) * 0.3 : 0
+    const on = isBusy && Math.floor(t * 4) % 2 === 0
+    tip.material.color.copy(srgb(on ? 0xe3b341 : 0x555555))
+    tip.material.emissive.copy(srgb(on ? 0xe3b341 : 0x000000))
+  }
+  return g
+}
+function makeMcp() {
+  // Low enough that an agent working behind it can be seen over it
+  const g = group(block(1.4, 0.86, 0.7, material(0x2a2d33, { roughness: 0.6 }), 0, 0.12, 0), block(1.42, 0.04, 0.72, METAL, 0, 0.98, 0))
+  for (const sx of [-1, 1]) g.add(block(0.08, 0.12, 0.6, METAL, sx * 0.6, 0, 0))
+  const leds = []
+  const colors = [0xe5484d, 0x7fb069, 0x6a9bcc, 0xe3b341]
+  for (let row = 0; row < 3; row++) {
+    g.add(block(1.2, 0.2, 0.02, material(0x3a3e46), 0, 0.2 + row * 0.27, 0.35))
+    for (let i = 0; i < 6; i++) {
+      const led = block(0.06, 0.06, 0.02, glow(colors[(row + i) % 4], 0.2), -0.4 + i * 0.15, 0.27 + row * 0.27, 0.37)
+      leds.push(led)
+      g.add(led)
+    }
+  }
+  g.tick = (isBusy, t) => {
+    leds.forEach((led, i) => {
+      const on = isBusy ? Math.sin(t * 9 + i * 1.7) > 0 : i % 6 === 0
+      led.material.emissiveIntensity = on ? 1.4 : 0.05
+    })
+  }
+  return g
+}
+function makeAgents() {
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.08, 32), WOOD)
+  top.position.y = 0.76
+  top.castShadow = top.receiveShadow = true
+  const orb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.22, 1), glow(0x9f86e0, 0.5))
+  orb.castShadow = true
+  const g = group(top, block(0.2, 0.72, 0.2, WOOD_DARK, 0, 0.04, 0), block(0.7, 0.04, 0.7, WOOD_DARK, 0, 0, 0), orb)
+  g.tick = (isBusy, t) => {
+    orb.position.y = 1.15 + Math.sin(t * 2) * 0.06
+    orb.rotation.y = t * (isBusy ? 2.5 : 0.6)
+    orb.rotation.x = t * 0.7
+    orb.material.emissiveIntensity = isBusy ? 1.2 + Math.sin(t * 6) * 0.3 : 0.45
+  }
+  return g
+}
+const MAKERS = { shell: makeShell, files: makeFiles, edit: makeEdit, web: makeWeb, mcp: makeMcp, agents: makeAgents }
+const BACK_XS = [0, 1, 2].map((i) => 3 + ((W - 4) * (i + 0.5)) / 3)
+
+// Where slot `i` is: which floor (0, then 1, -1, 2, -2, …), which corridor, and the room's place
+// and turn, its open front toward the corridor (`normal`)
+function levelOf(k) {
+  return k === 0 ? 0 : k % 2 === 1 ? (k + 1) / 2 : -k / 2
+}
+function placeOf(i) {
+  const level = levelOf(Math.floor(i / PER_FLOOR))
+  const r = i % PER_FLOOR
+  const arm = Math.floor(r / (PER_SIDE * 2))
+  const side = r % (PER_SIDE * 2) < PER_SIDE ? 0 : 1
+  const pos = r % PER_SIDE
+  const [ux, uz] = ARMS[arm]
+  // The side the room is on, across the corridor from its twin
+  const sx = side === 0 ? uz : -uz
+  const sz = side === 0 ? -ux : ux
+  const h = HALL / 2
+  const along = h + D + GAP + pos * (W + GAP) + W / 2
+  const front = { x: ux * along + sx * h, z: uz * along + sz * h }
+  const normal = { x: -sx, z: -sz }
+  const yaw = Math.atan2(normal.x, normal.z)
+  const c = Math.cos(yaw)
+  const s = Math.sin(yaw)
+  return {
+    level,
+    arm,
+    pos,
+    yaw,
+    normal,
+    x: front.x - ((W / 2) * c + D * s),
+    z: front.z - (-(W / 2) * s + D * c),
+  }
+}
+function levelName(level) {
+  return level >= 0 ? `${level + 1}F` : `B${-level}`
+}
+
+// A group per floor; only the floor in view is drawn
+const levels = new Map()
+let currentLevel = 0
+function levelGroup(level) {
+  if (!levels.has(level)) {
+    const g = new THREE.Group()
+    g.position.y = level * FLOOR_H
+    g.visible = level === currentLevel
+    scene.add(g)
+    levels.set(level, g)
+  }
+  return levels.get(level)
+}
+
+// The corridors of every floor and the hall where they meet, with a lift in the middle; rebuilt
+// when the rooms they lead to change
+let halls = []
+let hallsKey = ''
+// The stairs of the floor in view, where a click takes you up or down: rectangles on its floor
+let stairs = []
+const STAIRS_X = HALL / 2 + D / 2 + 0.25
+function buildHalls(places) {
+  const reach = new Map()
+  for (const place of places) {
+    const key = place.level + ':' + place.arm
+    reach.set(key, Math.max(reach.get(key) ?? -1, place.pos))
+  }
+  // The floor in view always has its hall, rooms or not, so you can stand on an empty floor
+  const levelSet = [...new Set([...places.map((place) => place.level), currentLevel])].sort((a, b) => a - b)
+  const key = JSON.stringify([...reach.entries()].sort()) + JSON.stringify(levelSet)
+  if (key === hallsKey) return
+  hallsKey = key
+  for (const hall of halls) {
+    hall.parent.remove(hall)
+    hall.traverse((one) => {
+      if (one.geometry) one.geometry.dispose()
+      if (one.isSprite) dispose(one)
+    })
+  }
+  halls = []
+  stairs = []
+  const h = HALL / 2
+  const plaza = h + D
+  for (const level of levelSet) {
+    const g = new THREE.Group()
+    const floorTiles = (w, d, x, z) => {
+      const texture = TILES.clone()
+      texture.needsUpdate = true
+      texture.repeat.set(w / 2, d / 2)
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, 0.3, d), material(0xffffff, { map: texture }))
+      mesh.position.set(x, -0.15, z)
+      mesh.receiveShadow = true
+      g.add(mesh)
+    }
+    // The hall: a square where the corridors meet, plants and a bench in two corners
+    floorTiles(plaza * 2, plaza * 2, 0, 0)
+    for (const [cx, cz] of [[-1, -1], [1, 1]]) {
+      const x = cx * (plaza - 1.2)
+      const z = cz * (plaza - 1.2)
+      g.add(block(0.6, 0.55, 0.6, material(0x6b5038), x, 0, z))
+      const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 0), material(0x5f8f4e, { flatShading: true }))
+      leaf.position.set(x, 1.0, z)
+      leaf.castShadow = true
+      g.add(leaf)
+      g.add(block(2.2, 0.45, 0.7, material(0x4a4756), x - cx * 2.2, 0, z))
+    }
+    // The lift in the middle: a glass shaft through every floor, its car where you are
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.15, FLOOR_H, 28, 1, true), new THREE.MeshStandardMaterial({ color: srgb(0x9cc0e8), transparent: true, opacity: 0.16, side: THREE.DoubleSide, roughness: 0.1, depthWrite: false }))
+    shaft.position.y = FLOOR_H / 2 - 0.3
+    for (const angle of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+      const post = block(0.12, FLOOR_H, 0.12, METAL, Math.sin(angle) * 1.15, -0.3, Math.cos(angle) * 1.15)
+      g.add(post)
+    }
+    const sign = label('lift · ' + levelName(level), { size: 36, scale: 0.013, background: 'rgba(36, 34, 43, 0.9)' })
+    sign.position.y = 3.9
+    g.add(shaft, sign)
+    // Stairs up in one corner, rising toward the floor above; stairs down in the other, into the
+    // dark of the floor below. A click on either takes you there
+    const steps = 12
+    const run = 0.5
+    const rise = 0.3
+    for (let i = 0; i < steps; i++) {
+      g.add(block(2.4, (i + 1) * rise, run, material(i % 2 === 0 ? 0x5d5a66 : 0x55525e), STAIRS_X, 0, -(h + 1.2 + (i + 0.5) * run)))
+    }
+    for (const side of [-1, 1]) g.add(block(0.08, 0.9, steps * run, METAL, STAIRS_X + side * 1.24, steps * rise * 0.5, -(h + 1.2 + (steps * run) / 2)))
+    const up = label('↑ ' + levelName(level + 1), { size: 40, scale: 0.014, background: 'rgba(36, 34, 43, 0.9)' })
+    up.position.set(STAIRS_X, steps * rise + 0.9, -(h + 1.2 + steps * run))
+    g.add(up)
+    stairs.push({ level, to: level + 1, x0: STAIRS_X - 1.3, x1: STAIRS_X + 1.3, z0: -(h + 1.2 + steps * run), z1: -(h + 1.2) })
+    const pit = block(2.6, 0.02, steps * run, material(0x0b0b0e), -STAIRS_X, 0.004, h + 1.2 + (steps * run) / 2)
+    g.add(pit)
+    for (let i = 0; i < 8; i++) {
+      const shade = Math.round(0x48 * (1 - i / 9))
+      g.add(block(2.4, 0.01, run * 0.9, material((shade << 16) | (shade << 8) | (shade + 8)), -STAIRS_X, 0.026, h + 1.2 + (i + 0.5) * run))
+    }
+    for (const side of [-1, 1]) g.add(block(0.08, 0.9, steps * run, METAL, -STAIRS_X + side * 1.34, 0, h + 1.2 + (steps * run) / 2))
+    g.add(block(2.76, 0.9, 0.08, METAL, -STAIRS_X, 0, h + 1.2 + steps * run))
+    const down = label('↓ ' + levelName(level - 1), { size: 40, scale: 0.014, background: 'rgba(36, 34, 43, 0.9)' })
+    down.position.set(-STAIRS_X, 1.4, h + 1.2 + (steps * run) / 2)
+    g.add(down)
+    stairs.push({ level, to: level - 1, x0: -STAIRS_X - 1.4, x1: -STAIRS_X + 1.4, z0: h + 1.2, z1: h + 1.2 + steps * run })
+    // The corridors, as far as their rooms reach
+    ARMS.forEach(([ux, uz], arm) => {
+      const far = reach.get(level + ':' + arm)
+      if (far === undefined) return
+      const length = D + GAP + (far + 1) * (W + GAP) + 1
+      const middle = plaza + length / 2 - D
+      if (ux !== 0) floorTiles(length, HALL, ux * middle, 0)
+      else floorTiles(HALL, length, 0, uz * middle)
+    })
+    levelGroup(level).add(g)
+    halls.push(g)
+  }
+}
+// The lift's car, riding to the floor in view
+const liftCar = group(
+  new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.05, 0.14, 28), material(0x8a8f99, { metalness: 0.4 })),
+  block(0.9, 0.06, 0.9, glow(0xf3d9a4, 0.6), 0, 2.4, 0),
+)
+liftCar.children[0].position.y = 0.07
+liftCar.children[0].receiveShadow = true
+scene.add(liftCar)
+
+// A room for one session: walls, door, windows, rug, the six stations, a lamp over the door that
+// says how the session is, and the sign with the project's name. The back wall and what hangs on
+// it stand in `tall`, cut away whenever the camera is behind it
+// A guest's room (a session without the mod, to watch only) has a look of its own: walls the
+// color of deep water, a teal rug, and a velvet rope across its open front
+const GUEST = { wall: 0x34505a, side: 0x2d4650, rug: 0x2f5d62, rugEdge: 0x4f8a8f }
+function buildRoom(slot, isGuest = false) {
+  const place = placeOf(slot)
+  const g = new THREE.Group()
+  g.position.set(place.x, 0, place.z)
+  g.rotation.y = place.yaw
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(W, 0.3, D), material(0xffffff, { map: PLANKS }))
+  floor.position.set(W / 2, -0.15, D / 2)
+  floor.receiveShadow = true
+  g.add(floor)
+  const tall = new THREE.Group()
+  const wallColor = isGuest ? GUEST.wall : 0x4a4756
+  tall.add(block(W + 0.4, WALL, 0.25, material(wallColor), W / 2, 0, -0.125))
+  const low = block(W + 0.4, 0.5, 0.25, material(wallColor), W / 2, 0, -0.125)
+  low.visible = false
+  g.add(tall, low)
+  g.add(block(W, 0.16, 0.05, material(0x2b2933), W / 2, 0, 0.02))
+  g.add(block(0.25, 0.6, D, material(isGuest ? GUEST.side : 0x403d4b), -0.125, 0, D / 2))
+  g.add(block(0.25, 0.6, D, material(isGuest ? GUEST.side : 0x403d4b), W + 0.125, 0, D / 2))
+  if (isGuest) {
+    // Brass posts and a red velvet rope across the front: look, don't come in
+    const brass = material(0xc9a227, { metalness: 0.6, roughness: 0.35 })
+    const velvet = material(0x9b1c2c, { roughness: 0.9 })
+    const posts = [1.2, W / 2, W - 1.2]
+    for (const x of posts) {
+      g.add(block(0.5, 0.06, 0.5, brass, x, 0, D - 0.2), block(0.09, 0.95, 0.09, brass, x, 0.05, D - 0.2))
+      const knob = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 8), brass)
+      knob.position.set(x, 1.05, D - 0.2)
+      g.add(knob)
+    }
+    for (let i = 0; i < posts.length - 1; i++) {
+      // Each span sags in three pieces
+      const [a, b] = [posts[i], posts[i + 1]]
+      for (let k = 0; k < 3; k++) {
+        const x0 = a + ((b - a) * k) / 3
+        const x1 = a + ((b - a) * (k + 1)) / 3
+        const sag = (k === 1 ? 0.22 : 0.12)
+        const piece = block(x1 - x0 + 0.04, 0.06, 0.06, velvet, (x0 + x1) / 2, 0.95 - sag, D - 0.2)
+        piece.rotation.z = k === 0 ? -0.18 : k === 2 ? 0.18 : 0
+        g.add(piece)
+      }
+    }
+  }
+  const doorPanel = block(1.0, 2.0, 0.06, material(0x7a5a3a), DOOR_X, 0, 0.04)
+  tall.add(block(1.2, 2.15, 0.05, material(0x4a3524), DOOR_X, 0, 0.01), doorPanel)
+  tall.add(block(0.08, 0.08, 0.05, glow(0xe3b341, 0.4), DOOR_X + 0.35, 0.95, 0.09))
+  // Light through the open door, on the floor in front of it
+  const doorLight = block(1.4, 0.004, 1.2, glow(0xf3d9a4, 0.5), DOOR_X, 0.004, 0.75)
+  doorLight.visible = false
+  g.add(doorLight)
+  for (const x of [(BACK_XS[0] + BACK_XS[1]) / 2, (BACK_XS[1] + BACK_XS[2]) / 2]) {
+    tall.add(block(1.3, 1.1, 0.05, material(0x2b2933), x, 1.3, 0.01))
+    tall.add(block(1.1, 0.9, 0.04, glow(0x9cc0e8, 0.7), x, 1.4, 0.03))
+    tall.add(block(0.05, 0.9, 0.05, material(0x2b2933), x, 1.4, 0.05))
+  }
+  const rug = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.02, 1.8), material(isGuest ? GUEST.rug : 0x6a3e46))
+  rug.position.set(W / 2, 0.01, AISLE + 0.4)
+  rug.receiveShadow = true
+  g.add(rug, block(5.8, 0.012, 2.0, material(isGuest ? GUEST.rugEdge : 0x8a5a62), W / 2, 0, AISLE + 0.4))
+  const lamp = block(0.5, 0.12, 0.12, glow(0x55555f, 0.2), DOOR_X, 2.3, 0.08)
+  tall.add(lamp)
+  const stations = {}
+  STATIONS.forEach((id, index) => {
+    const isBack = index < 3
+    const x = isBack ? BACK_XS[index] : (W * (index - 3 + 0.5)) / 3
+    const station = MAKERS[id]()
+    station.position.set(x, 0, isBack ? 0.65 : 6.5)
+    g.add(station)
+    const name = label(id, { color: '#8b8b96', size: 30 })
+    name.position.set(x, 0.22, isBack ? 1.45 : 7.6)
+    g.add(name)
+    stations[id] = { group: station, x, isBack, label: name, isBusy: false }
+  })
+  // A screen high on the back wall showing what the model writes and thinks as it goes
+  const screenCanvas = document.createElement('canvas')
+  screenCanvas.width = 1024
+  screenCanvas.height = 192
+  const screenTexture = new THREE.CanvasTexture(screenCanvas)
+  screenTexture.encoding = THREE.sRGBEncoding
+  screenTexture.anisotropy = 4
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 1.05), new THREE.MeshBasicMaterial({ map: screenTexture, toneMapped: false }))
+  screen.position.set(7, 2.98, 0.04)
+  tall.add(block(5.8, 1.2, 0.06, INK, 7, 2.4, 0.0), screen)
+  // A tray by the door where each finished answer is left as a sheet of paper
+  const papers = new THREE.Group()
+  papers.position.set(2.75, 0.75, 0.45)
+  g.add(block(0.9, 0.75, 0.55, material(0x5c4329), 2.75, 0, 0.45), papers)
+  // A sheet over the editing desk showing the latest edit's diff
+  const sheetCanvas = document.createElement('canvas')
+  sheetCanvas.width = 512
+  sheetCanvas.height = 384
+  const sheetTexture = new THREE.CanvasTexture(sheetCanvas)
+  sheetTexture.encoding = THREE.sRGBEncoding
+  const sheet = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.125), new THREE.MeshBasicMaterial({ map: sheetTexture, toneMapped: false, transparent: true, side: THREE.DoubleSide }))
+  sheet.position.set(BACK_XS[2], 2.1, 1.0)
+  sheet.visible = false
+  g.add(sheet)
+  // A flask that fills with the context window, red when nearly full
+  const flask = new THREE.Group()
+  flask.position.set(13.2, 0, 1.0)
+  const liquid = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 1, 20), new THREE.MeshStandardMaterial({ color: srgb(0x3fb950), emissive: srgb(0x3fb950), emissiveIntensity: 0.35, roughness: 0.3 }))
+  liquid.position.y = 0.12
+  liquid.scale.y = 0.001
+  const glass = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 1.45, 20, 1, true), new THREE.MeshStandardMaterial({ color: srgb(0xcfe0ff), transparent: true, opacity: 0.22, roughness: 0.05, side: THREE.DoubleSide }))
+  glass.position.y = 0.12 + 0.725
+  flask.add(block(0.8, 0.12, 0.8, material(0x3a3846), 0, 0, 0), liquid, glass, block(0.7, 0.06, 0.7, material(0x3a3846), 0, 1.57, 0))
+  g.add(flask)
+  levelGroup(place.level).add(g)
+  return {
+    isGuest,
+    slot, place, group: g, tall, low, stations, doorPanel, doorLight, lamp, agents: new Map(), sign: null, signKey: '', strollAt: 0,
+    screen: { canvas: screenCanvas, texture: screenTexture, key: '' },
+    papers, papersShown: -1, answersSeen: -1,
+    sheet: { mesh: sheet, canvas: sheetCanvas, texture: sheetTexture, key: '' },
+    flask: { liquid, level: 0, label: null, key: '' },
+    // The z's that rise over a sleeping Claude
+    zs: ['z', 'Z', 'z'].map((letter) => {
+      const z = label(letter, { size: 48, scale: 0.012, color: '#cfe0ff' })
+      z.visible = false
+      g.add(z)
+      return z
+    }),
+    activeAt: Date.now(),
+  }
+}
+
+function removeThing(g) {
+  g.parent.remove(g)
+  g.traverse((one) => {
+    if (one.geometry) one.geometry.dispose()
+    if (one.isSprite) dispose(one)
+  })
+}
+
+// The rooms a new session could get on the floor in view: on every side of every corridor, the
+// first free one, each a dashed outline to click. `ghost` is the first of them
+let frontier = []
+let frontierKey = ''
+let ghost = null
+function frontierSlots(level) {
+  const first = floorIndexOf(level) * PER_FLOOR
+  const slots = []
+  for (let arm = 0; arm < ARMS.length; arm++) {
+    for (let side = 0; side < 2; side++) {
+      for (let pos = 0; pos < PER_SIDE; pos++) {
+        const slot = first + arm * PER_SIDE * 2 + side * PER_SIDE + pos
+        if (!isTaken(slot)) {
+          slots.push(slot)
+          break
+        }
+      }
+    }
+  }
+  return slots
+}
+function placeFrontier() {
+  const slots = CAN_SEND && !placing ? frontierSlots(currentLevel) : []
+  const key = currentLevel + ':' + slots.join(',')
+  if (key === frontierKey) return
+  frontierKey = key
+  for (const one of frontier) removeThing(one.group)
+  frontier = slots.map((slot) => outlineRoom(slot, '+ new session', 0x8b8b96))
+  ghost = frontier[0] ?? null
+}
+
+// Choosing a spot: every free room on the floor in view shows as a dashed outline to click, for a
+// new session or for a room to move to; the floor buttons go one floor beyond in each direction
+let placing = null
+let newSlot = null
+const ARM_NAMES = ['east', 'west', 'north', 'south']
+function floorIndexOf(level) {
+  return level === 0 ? 0 : level > 0 ? level * 2 - 1 : -level * 2
+}
+function describeSlot(slot) {
+  const place = placeOf(slot)
+  const r = slot % PER_FLOOR
+  const side = r % (PER_SIDE * 2) < PER_SIDE ? 'one side' : 'the other side'
+  return levelName(place.level) + ' · ' + ARM_NAMES[place.arm] + ' corridor, ' + side + ', room ' + (place.pos + 1)
+}
+function outlineRoom(slot, text, color) {
+  const place = placeOf(slot)
+  const g = new THREE.Group()
+  g.position.set(place.x, 0, place.z)
+  g.rotation.y = place.yaw
+  const outline = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W, 2.4, D)), new THREE.LineDashedMaterial({ color, dashSize: 0.4, gapSize: 0.3 }))
+  outline.position.set(W / 2, 1.2, D / 2)
+  outline.computeLineDistances()
+  const pad = new THREE.Mesh(new THREE.BoxGeometry(W, 0.04, D), new THREE.MeshStandardMaterial({ color: srgb(0x2b2a33), transparent: true, opacity: 0.45 }))
+  pad.position.set(W / 2, 0.02, D / 2)
+  const sign = label(text, { size: 40, scale: 0.013, background: 'rgba(36, 34, 43, 0.9)' })
+  sign.position.set(W / 2, 1.6, D / 2)
+  g.add(outline, pad, sign)
+  levelGroup(place.level).add(g)
+  return { slot, place, group: g }
+}
+function drawPlacing() {
+  for (const one of placing.ghosts) removeThing(one.group)
+  placing.ghosts = []
+  const first = floorIndexOf(currentLevel) * PER_FLOOR
+  for (let slot = first; slot < first + PER_FLOOR; slot++) {
+    if (isTaken(slot, placing.id)) continue
+    if (placing.purpose === 'move' && rooms.get(placing.id)?.slot === slot) continue
+    placing.ghosts.push(outlineRoom(slot, placing.purpose === 'move' ? 'move here' : 'here', 0xd97757))
+  }
+  frontierKey = ''
+  syncRooms()
+}
+function startPlacing(purpose, id = null) {
+  closePanel()
+  placing = { purpose, id, ghosts: [] }
+  document.getElementById('placing-text').textContent =
+    purpose === 'move' ? 'Pick where ' + (states.get(id)?.project ?? 'this room') + ' moves to: any dashed room, on any floor (floor buttons at the top).' : 'Pick a spot for the new session: any dashed room, on any floor (floor buttons at the top).'
+  document.getElementById('placing').classList.add('open')
+  chipsKey = ''
+  drawPlacing()
+  // Back a little, to see the whole floor
+  const target = new THREE.Vector3(0, currentLevel * FLOOR_H, 0)
+  flight = { fromTarget: controls.target.clone(), fromPosition: camera.position.clone(), target, position: target.clone().add(new THREE.Vector3(0, 42, 34)), t: 0 }
+}
+function stopPlacing() {
+  if (!placing) return
+  for (const one of placing.ghosts) removeThing(one.group)
+  placing = null
+  frontierKey = ''
+  document.getElementById('placing').classList.remove('open')
+  chipsKey = ''
+  hallsKey = ''
+}
+function choosePlace(slot) {
+  const { purpose, id } = placing
+  stopPlacing()
+  reserved.set(slot, Date.now())
+  if (purpose === 'move') {
+    send({ session: id, type: 'set-slot', slot }).catch(() => reserved.delete(slot))
+    return
+  }
+  newSlot = slot
+  openPanel('new')
+  const place = placeOf(slot)
+  flight = { fromTarget: controls.target.clone(), fromPosition: camera.position.clone(), ...viewOf(place), t: 0 }
+}
+document.getElementById('placing-cancel').onclick = stopPlacing
+window.addEventListener('keydown', (event) => event.key === 'Escape' && placing && stopPlacing())
+
+function spotOf(room, id) {
+  const station = room.stations[id]
+  return station.isBack ? { x: station.x, z: 1.75, yaw: Math.PI } : { x: station.x, z: 5.45, yaw: 0 }
+}
+
+// The agents: Clawd, a wide body with arms out, four legs and two eyes, its front toward +z
+function makeAgent(room, state) {
+  const scale = state.isMain ? 1.0 : 0.75
+  const body = material(state.color, { roughness: 0.65 })
+  const g = new THREE.Group()
+  const torso = block(1.0, 0.62, 0.62, body, 0, 0.3, 0)
+  const armL = block(0.26, 0.2, 0.32, body, -0.62, 0.52, 0.05)
+  const armR = block(0.26, 0.2, 0.32, body, 0.62, 0.52, 0.05)
+  const legs = [-0.33, -0.11, 0.11, 0.33].map((x) => block(0.13, 0.3, 0.14, body, x, 0, 0))
+  const eyes = [-0.19, 0.19].map((x) => block(0.12, 0.2, 0.02, INK, x, 0.62, 0.31))
+  const inner = group(torso, armL, armR, ...legs, ...eyes)
+  g.add(inner)
+  g.scale.setScalar(scale * 1.15)
+  room.group.add(g)
+  const start = state.isMain ? { x: W / 2, z: AISLE } : { x: DOOR_X, z: 0.6 }
+  g.position.set(start.x, 0, start.z)
+  const cloud = new THREE.Sprite(new THREE.SpriteMaterial({ map: CLOUDS[0], depthTest: false, transparent: true }))
+  cloud.scale.set(1.3, 0.85, 1)
+  cloud.position.set(0.35, 2.15, 0)
+  cloud.renderOrder = 11
+  cloud.visible = false
+  const carried = block(0.5, 0.02, 0.36, material(0xe8e2d0), 0, 0.82, 0.5)
+  carried.visible = false
+  g.add(cloud, carried)
+  return { id: state.id, group: g, inner, armL, armR, legs, eyes, scale, yaw: 0, walking: false, bubble: null, bubbleText: '', state, gone: false, stroll: null, cloud, carried, delivery: null, sleepy: false }
+}
+
+// A thought cloud with one, two or three dots, shown in turn while an agent thinks
+const CLOUDS = [1, 2, 3].map((dots) => {
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 168
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = 'rgba(232, 226, 208, 0.95)'
+  for (const [x, y, r] of [[70, 80, 46], [125, 62, 56], [185, 82, 44], [128, 100, 50], [30, 150, 10], [52, 132, 15]]) {
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.fillStyle = '#16161c'
+  for (let i = 0; i < dots; i++) {
+    ctx.beginPath()
+    ctx.arc(95 + i * 32, 85, 9, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.encoding = THREE.sRGBEncoding
+  return texture
+})
+
+function setBubble(agent, text, background) {
+  const key = text + '|' + background
+  if (agent.bubbleText === key) return
+  agent.bubbleText = key
+  if (agent.bubble) {
+    agent.group.remove(agent.bubble)
+    dispose(agent.bubble)
+  }
+  agent.bubble = null
+  if (!text) return
+  agent.bubble = label(text, { color: '#16161c', background: background || '#e8e2d0', size: 30 })
+  agent.bubble.position.set(0, 1.55, 0)
+  agent.bubble.scale.multiplyScalar(1 / (agent.scale * 1.15))
+  agent.group.add(agent.bubble)
+}
+
+// Where an agent is going: its station's spot (side by side when several share one), the door
+// when it leaves, or a stroll
+function goalOf(room, agent) {
+  if (agent.gone) return { x: DOOR_X, z: 0.6, yaw: Math.PI }
+  if (room.isEnding && agent.state.isMain) return { x: DOOR_X, z: 0.9, yaw: 0 }
+  if (agent.delivery) return { x: 2.75, z: 1.35, yaw: Math.PI }
+  if (agent.sleepy) return { x: W / 2, z: AISLE + 0.3, yaw: 0 }
+  const station = agent.state.station
+  if (station && room.stations[station]) {
+    const spot = spotOf(room, station)
+    const sharing = [...room.agents.values()].filter((other) => !other.gone && other.state.station === station)
+    const place = sharing.indexOf(agent)
+    const shift = place === 0 ? 0 : Math.ceil(place / 2) * 1.3 * (place % 2 === 1 ? 1 : -1)
+    return { ...spot, x: spot.x + shift }
+  }
+  return agent.stroll ?? { x: agent.group.position.x, z: agent.group.position.z, yaw: 0 }
+}
+
+// One frame of walking: out to the aisle, along it, in to the spot; turning smoothly
+function walk(room, agent, dt, t) {
+  const goal = goalOf(room, agent)
+  const p = agent.group.position
+  const step = SPEED * dt
+  let heading = null
+  const dx = goal.x - p.x
+  if (Math.abs(dx) > 0.05 && Math.abs(p.z - AISLE) > 0.05) {
+    p.z += Math.sign(AISLE - p.z) * Math.min(step, Math.abs(AISLE - p.z))
+    heading = AISLE > p.z ? 0 : Math.PI
+  } else if (Math.abs(dx) > 0.05) {
+    p.x += Math.sign(dx) * Math.min(step * (Math.abs(dx) > 3 ? 1.4 : 1), Math.abs(dx))
+    heading = dx > 0 ? Math.PI / 2 : -Math.PI / 2
+  } else if (Math.abs(goal.z - p.z) > 0.05) {
+    p.z += Math.sign(goal.z - p.z) * Math.min(step, Math.abs(goal.z - p.z))
+    heading = goal.z > p.z ? 0 : Math.PI
+  }
+  agent.walking = heading !== null
+  const target = heading ?? goal.yaw
+  const gap = Math.atan2(Math.sin(target - agent.yaw), Math.cos(target - agent.yaw))
+  agent.yaw += gap * Math.min(1, dt * 10)
+  agent.group.rotation.y = agent.yaw
+  // Legs swing while walking; arms type while working; a little bob either way
+  const typing = !agent.walking && agent.state.calls > 0 && !agent.state.isWaiting
+  agent.legs.forEach((leg, i) => (leg.position.y = agent.walking ? Math.max(0, Math.sin(t * 14 + i * Math.PI)) * 0.12 : 0))
+  agent.armL.position.y = 0.52 + (typing ? Math.max(0, Math.sin(t * 16)) * 0.1 : 0)
+  agent.armR.position.y = 0.52 + (typing ? Math.max(0, Math.sin(t * 16 + Math.PI)) * 0.1 : 0)
+  agent.inner.position.y = agent.walking ? Math.abs(Math.sin(t * 14)) * 0.05 : typing ? Math.abs(Math.sin(t * 8)) * 0.02 : 0
+  // Leaving for good, it waves from the door
+  const isWaving = room.isEnding && agent.state.isMain && !agent.walking
+  agent.armR.rotation.z = isWaving ? 0.9 + Math.sin(t * 9) * 0.5 : 0
+  if (isWaving) agent.armR.position.y = 0.85
+  return agent.walking
+}
+
+function hookColor(event) {
+  if (/Failure|Denied/.test(event)) return HOOK_COLORS.fail
+  if (/^Permission|Notification/.test(event)) return HOOK_COLORS.ask
+  if (/ToolU|ToolBatch/.test(event)) return HOOK_COLORS.tool
+  if (/^Subagent|^Task|TeammateIdle/.test(event)) return HOOK_COLORS.agent
+  if (/UserPromptSubmit|^Stop$/.test(event)) return HOOK_COLORS.turn
+  return HOOK_COLORS.other
+}
+
+function statusOf(state) {
+  if (state.permission || state.agents.some((one) => one.isWaiting)) return 'waiting'
+  return state.isWorking ? 'working' : 'idle'
+}
+
+// Brings one room's agents, stations, lamp and sign up to its session's state
+function apply(room, state) {
+  room.isEnding = state.isEnding === true
+  for (const id of STATIONS) room.stations[id].isBusy = state.busy[id] === true
+  const seen = new Set()
+  for (const one of state.agents) {
+    seen.add(one.id)
+    let agent = room.agents.get(one.id)
+    if (!agent) {
+      agent = makeAgent(room, one)
+      room.agents.set(one.id, agent)
+    }
+    agent.state = one
+    agent.gone = false
+    const note = agent.note && agent.note.until > frameClock.elapsedTime ? agent.note : null
+    setBubble(agent, note ? note.text : one.bubble, note ? '#cfe0ff' : one.bubbleColor)
+  }
+  for (const agent of room.agents.values()) {
+    if (!seen.has(agent.id) && !agent.gone) {
+      agent.gone = true
+      agent.state = { ...agent.state, station: null, calls: 0 }
+      setBubble(agent, 'bye', null)
+    }
+  }
+  // A new answer: the main agent carries a sheet to the tray, where it lands on the pile
+  const answered = (state.answersMeta ?? []).length
+  if (room.answersSeen === -1) room.answersSeen = room.papersShown = answered
+  if (answered > room.answersSeen) {
+    room.answersSeen = answered
+    const main = room.agents.get('main')
+    if (main) {
+      main.delivery = { until: frameClock.elapsedTime + 8 }
+      main.carried.visible = true
+    } else {
+      room.papersShown = answered
+    }
+  }
+  const status = statusOf(state)
+  const lampColor = state.isEnding ? 0xe5484d : { working: 0x3fb950, waiting: 0xe3b341, idle: 0x55555f }[status]
+  room.lamp.material.color.copy(srgb(lampColor))
+  room.lamp.material.emissive.copy(srgb(lampColor))
+  room.lamp.material.emissiveIntensity = status === 'idle' ? 0.15 : 1.2
+  const signKey = state.project + '|' + status + '|' + (state.title ?? '')
+  if (room.signKey !== signKey) {
+    room.signKey = signKey
+    if (room.sign) {
+      room.group.remove(room.sign)
+      dispose(room.sign)
+    }
+    const name = plain((state.guest ? '👁 guest · ' : '') + (state.title ? state.project + ' — ' + state.title : state.project))
+    room.sign = label(name, { size: 44, scale: 0.012, background: state.guest ? 'rgba(30, 64, 72, 0.92)' : 'rgba(36, 34, 43, 0.9)', dot: '#' + lampColor.toString(16).padStart(6, '0') })
+    room.sign.position.set(W / 2, WALL + 0.7, 0)
+    room.group.add(room.sign)
+  }
+}
+
+// What the sessions last wrote, by id, and which ids the index last listed
+const states = new Map()
+let listed = []
+let listedAt = 0
+window.workshopIndex = (ids) => {
+  listed = ids
+  listedAt = Date.now()
+}
+window.workshopSession = (state) => states.set(state.id, state)
+// Each session's answers and edits, loaded for the open panel when they change
+const mores = new Map()
+window.workshopMore = (more) => mores.set(more.id, more)
+// Loads one of the files the sessions write, each `window.<handler>(<json>)`. Served, it is
+// fetched and parsed, one request a file at a time; opened as a file, it can only be run as a
+// script
+const loading = new Set()
+function load(src) {
+  if (loading.has(src)) return
+  loading.add(src)
+  const done = () => loading.delete(src)
+  if (location.protocol === 'http:') {
+    fetch(src + '?' + Date.now(), { cache: 'no-store', headers: { 'X-Workshop-Token': TOKEN } })
+      .then((response) => (response.ok ? response.text() : ''))
+      .then((text) => {
+        const call = /^window\.(workshop\w+)\(([\s\S]*)\)\s*$/.exec(text)
+        if (call && typeof window[call[1]] === 'function') window[call[1]](JSON.parse(call[2]))
+      })
+      .catch(() => {})
+      .finally(done)
+    return
+  }
+  const script = document.createElement('script')
+  script.src = src + '?' + Date.now()
+  script.onload = script.onerror = () => {
+    script.remove()
+    done()
+  }
+  document.body.appendChild(script)
+}
+// Reading starts once the page holds the token (or, opened as a file, at once)
+function startReading() {
+  setInterval(() => load('index.js'), 1000)
+  setInterval(() => listed.forEach((id) => load('sessions/' + id + '.js')), 300)
+  load('index.js')
+  readSettings()
+  if (location.protocol === 'http:' && !CAN_SEND) {
+    document.getElementById('offline').textContent = 'This window has no key to the sessions. Open it again with /workshop 3d in a Claude Code session.'
+  }
+}
+
+// The rooms, by session id, each in the slot it took when it came; a new one takes the first free
+const rooms = new Map()
+// Rooms of sessions that ended, folding away
+const folding = []
+const FOLD_MS = 1400
+function fold() {
+  for (const item of [...folding]) {
+    const k = Math.min(1, (performance.now() - item.at) / FOLD_MS)
+    const ease = k * k
+    item.room.group.scale.set(1 - ease * 0.15, Math.max(0.001, 1 - ease), 1 - ease * 0.15)
+    item.room.group.position.y = -ease * 0.3
+    if (k === 1) {
+      removeThing(item.room.group)
+      folding.splice(folding.indexOf(item), 1)
+    }
+  }
+}
+function liveStates() {
+  const now = Date.now()
+  return [...states.values()]
+    .filter((state) => now - state.at < GONE_MS && listed.includes(state.id))
+    .sort((a, b) => a.startedAt - b.startedAt)
+}
+// Spots the window promised a session about to start (picked for a new session, or a move), kept
+// from other sessions for a while
+const reserved = new Map()
+const RESERVE_MS = 120000
+function isTaken(slot, exceptId = null, isGuestBlind = false) {
+  for (const [id, room] of rooms) if (id !== exceptId && room.slot === slot && !(isGuestBlind && room.isGuest)) return true
+  const at = reserved.get(slot)
+  return at !== undefined && Date.now() - at < RESERVE_MS
+}
+// The first free spot; for a session with the mod, a guest's spot counts as free, since guests
+// always come after: the guest moves on
+function freeSlot(isGuestBlind = false) {
+  let slot = 0
+  while (isTaken(slot, null, isGuestBlind)) slot += 1
+  return slot
+}
+// The spot a session asked for, when it did and it is free for it
+function wantedSlot(state) {
+  if (!Number.isInteger(state.slot)) return null
+  for (const [id, room] of rooms) if (id !== state.id && room.slot === state.slot && !room.isGuest) return null
+  return state.slot
+}
+function syncRooms() {
+  const live = liveStates()
+  const liveIds = new Set(live.map((state) => state.id))
+  for (const [id, room] of rooms) {
+    if (!liveIds.has(id)) {
+      // A session that ended: its room folds into the floor, then goes
+      folding.push({ room, at: performance.now() })
+      rooms.delete(id)
+      if (selected === id) closePanel()
+    }
+  }
+  // Sessions with the mod choose their rooms first; guests take what is left, and move on when a
+  // session with the mod needs their spot
+  const ordered = [...live.filter((state) => !state.guest), ...live.filter((state) => state.guest)]
+  for (const state of ordered) {
+    const isGuest = state.guest === true
+    const wanted = isGuest ? null : wantedSlot(state)
+    const room = rooms.get(state.id)
+    // A guest that took up the mod is rebuilt as a room of its own
+    if (room && room.isGuest === isGuest && (wanted === null || wanted === room.slot)) continue
+    // A new room where its session asked, or the first free spot; or a room moving to its new spot
+    if (room) {
+      folding.push({ room, at: performance.now() })
+      rooms.delete(state.id)
+    }
+    const slot = wanted ?? (isGuest ? freeSlot() : freeSlot(true))
+    // A guest in the way moves on, after the sessions with the mod
+    for (const [id, other] of [...rooms]) {
+      if (!isGuest && other.isGuest && other.slot === slot) {
+        folding.push({ room: other, at: performance.now() })
+        rooms.delete(id)
+        ordered.push(states.get(id))
+      }
+    }
+    reserved.delete(slot)
+    rooms.set(state.id, buildRoom(slot, isGuest))
+    if (room && selected === state.id) focus(state.id)
+    if (rooms.size === 1 && !room) focus(state.id, true)
+  }
+  placeFrontier()
+  const places = [...rooms.values()].map((room) => room.place)
+  places.push(...frontier.map((one) => one.place))
+  if (placing) places.push(...placing.ghosts.map((one) => one.place))
+  buildHalls(places)
+  for (const [id, room] of rooms) apply(room, states.get(id))
+  renderChips(live)
+  updatePanel()
+}
+
+// The floors' buttons, and the chips: one a session, showing how it is and its last hook; a
+// click goes there and opens it
+let chipsKey = ''
+// What the session running the window has to say (a dialog that would not open, a Terminal that
+// did not start), each shown once as a toast, and in the new-session form
+const toldIds = new Set()
+function showNotices(live) {
+  for (const state of live) {
+    for (const notice of state.windowNotices ?? []) {
+      if (toldIds.has(notice.id)) continue
+      toldIds.add(notice.id)
+      if (Date.now() - notice.at > 60000) continue
+      toast(notice.text)
+      if (selected === 'new' && parts.status) {
+        parts.status.className = notice.kind === 'pick-failed' ? 'note' : 'failed'
+        parts.status.textContent = notice.text
+      }
+    }
+  }
+}
+function toast(text) {
+  const box = el('div', { className: 'toast', textContent: text })
+  document.body.append(box)
+  setTimeout(() => box.remove(), 8000)
+}
+
+function renderChips(live) {
+  showNotices(live)
+  watchMail(live)
+  const agentCount = live.reduce((sum, state) => sum + state.agents.length, 0)
+  document.getElementById('count').textContent = `· ${live.length} session${live.length === 1 ? '' : 's'} · ${agentCount} agent${agentCount === 1 ? '' : 's'}`
+  let usedLevels = [...new Set([...rooms.values()].map((room) => room.place.level))]
+  // Every floor in use shows, the one in view, and one more above and below, empty or not
+  {
+    const low = Math.min(0, currentLevel, ...usedLevels) - 1
+    const high = Math.max(0, currentLevel, ...usedLevels) + 1
+    usedLevels = Array.from({ length: high - low + 1 }, (_, i) => low + i)
+  }
+  usedLevels.sort((a, b) => b - a)
+  renderTitlesToggle(live)
+  const key = JSON.stringify([live.map((state) => [state.id, state.project, state.title, statusOf(state), state.lastHook?.event, rooms.get(state.id)?.place.level]), selected, currentLevel, usedLevels, Boolean(placing)])
+  if (key === chipsKey) return
+  chipsKey = key
+  document.getElementById('floors').replaceChildren(
+    ...(true
+      ? usedLevels.map((level) => {
+          const button = el('button', { className: 'chip' + (level === currentLevel ? ' focused' : ''), textContent: levelName(level) })
+          button.onclick = () => setLevel(level)
+          return button
+        })
+      : []),
+  )
+  document.getElementById('rooms').replaceChildren(
+    ...live.map((state) => {
+      const chip = el('button', { className: 'chip' + (selected === state.id ? ' focused' : '') }, el('span', { className: 'dot ' + statusOf(state) }), el('span', { textContent: plain(state.project) }))
+      if (state.guest) chip.append(el('span', { className: 'tag', textContent: '👁 guest' }))
+      if (state.title) chip.append(el('span', { className: 'dim', textContent: plain(state.title) }))
+      const room = rooms.get(state.id)
+      if ([...rooms.values()].some((other) => other.place.level !== 0) && room) chip.append(el('span', { className: 'tag', textContent: levelName(room.place.level) }))
+      if (state.lastHook) chip.append(el('span', { textContent: state.lastHook.event, style: 'color:' + hookColor(state.lastHook.event) }))
+      chip.onclick = () => {
+        focus(state.id)
+        openPanel(state.id)
+      }
+      return chip
+    }),
+  )
+}
+
+// The titles switch: on, every session names each turn with a small model's help, which costs
+// tokens, so turning it on asks first
+const confirmBox = document.getElementById('confirm')
+function renderTitlesToggle(live) {
+  const toggle = document.getElementById('titles')
+  const isOn = live.some((state) => state.titlesOn)
+  const able = CAN_SEND && live.some((state) => state.canControl)
+  toggle.style.display = able ? '' : 'none'
+  const text = 'titles: ' + (isOn ? 'on' : 'off')
+  if (toggle.textContent !== text) toggle.textContent = text
+  toggle.onclick = () => {
+    if (isOn) send({ session: '_window', type: 'set-titles', on: false }).catch(() => {})
+    else confirmBox.classList.add('open')
+  }
+}
+document.getElementById('confirm-on').onclick = () => {
+  confirmBox.classList.remove('open')
+  send({ session: '_window', type: 'set-titles', on: true }).catch(() => {})
+}
+document.getElementById('confirm-off').onclick = () => confirmBox.classList.remove('open')
+
+function el(tag, props = {}, ...children) {
+  const node = document.createElement(tag)
+  Object.assign(node, props)
+  node.append(...children.filter((child) => child !== null && child !== undefined))
+  return node
+}
+
+// Changes the floor in view: the others are hidden, and the view rises or sinks to it
+function setLevel(level) {
+  if (level === currentLevel) return
+  levelGroup(level)
+  const shift = (level - currentLevel) * FLOOR_H
+  currentLevel = level
+  for (const [key, g] of levels) g.visible = key === level
+  flight = {
+    fromTarget: controls.target.clone(),
+    fromPosition: camera.position.clone(),
+    target: controls.target.clone().setY(controls.target.y + shift),
+    position: camera.position.clone().setY(camera.position.y + shift),
+    t: 0,
+  }
+  chipsKey = ''
+  if (placing) drawPlacing()
+  else syncRooms()
+}
+
+// Flies the view to a room, looking in through its open front
+let flight = null
+function viewOf(place) {
+  const c = Math.cos(place.yaw)
+  const s = Math.sin(place.yaw)
+  const center = new THREE.Vector3(place.x + (W / 2) * c + (D / 2) * s, place.level * FLOOR_H + 0.6, place.z - (W / 2) * s + (D / 2) * c)
+  const position = center.clone().add(new THREE.Vector3(place.normal.x * 17, 13, place.normal.z * 17))
+  return { target: center, position }
+}
+function focus(id, isInstant = false) {
+  const room = rooms.get(id)
+  if (!room) return
+  if (room.place.level !== currentLevel) {
+    currentLevel = room.place.level
+    for (const [key, g] of levels) g.visible = key === currentLevel
+  }
+  const view = viewOf(room.place)
+  chipsKey = ''
+  if (isInstant) {
+    controls.target.copy(view.target)
+    camera.position.copy(view.position)
+    return
+  }
+  flight = { fromTarget: controls.target.clone(), fromPosition: camera.position.clone(), ...view, t: 0 }
+}
+// Taking hold of the view ends a flight
+controls.addEventListener('start', () => (flight = null))
+
+// A click (not a drag) on a room opens its panel; on the empty room, the new session's
+let pressedAt = null
+renderer.domElement.addEventListener('pointerdown', (event) => (pressedAt = { x: event.clientX, y: event.clientY, button: event.button }))
+renderer.domElement.addEventListener('pointerup', (event) => {
+  if (!pressedAt || pressedAt.button !== 0 || Math.hypot(event.clientX - pressedAt.x, event.clientY - pressedAt.y) > 5) return
+  const pointer = new THREE.Vector2((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1)
+  const ray = new THREE.Raycaster()
+  ray.setFromCamera(pointer, camera)
+  const hit = new THREE.Vector3()
+  if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -currentLevel * FLOOR_H), hit)) return
+  const inside = (g) => {
+    const local = g.worldToLocal(hit.clone())
+    return local.x >= 0 && local.x <= W && local.z >= 0 && local.z <= D
+  }
+  if (placing) {
+    const spot = placing.ghosts.find((one) => inside(one.group))
+    if (spot) choosePlace(spot.slot)
+    return
+  }
+  for (const [id, room] of rooms) {
+    if (room.place.level === currentLevel && inside(room.group)) {
+      focus(id)
+      openPanel(id)
+      return
+    }
+  }
+  const spot = frontier.find((one) => inside(one.group))
+  if (spot) {
+    newSlot = spot.slot
+    openPanel('new')
+    return
+  }
+  // The stairs: up or down a floor
+  const flightOfStairs = stairs.find((one) => one.level === currentLevel && hit.x >= one.x0 && hit.x <= one.x1 && hit.z >= one.z0 && hit.z <= one.z1)
+  if (flightOfStairs) setLevel(flightOfStairs.to)
+  else if (selected !== null && tourAt < 0) closePanel()
+})
+
+// Arrows and WASD walk the view along the floor, unless a field has the keys
+const held = new Set()
+window.addEventListener('keydown', (event) => {
+  if (event.target.closest && event.target.closest('input, textarea')) return
+  held.add(event.key.toLowerCase())
+})
+window.addEventListener('keyup', (event) => held.delete(event.key.toLowerCase()))
+window.addEventListener('blur', () => held.clear())
+function walkView(dt) {
+  const forward = new THREE.Vector3().subVectors(controls.target, camera.position).setY(0).normalize()
+  const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0))
+  const move = new THREE.Vector3()
+  if (held.has('arrowup') || held.has('w')) move.add(forward)
+  if (held.has('arrowdown') || held.has('s')) move.sub(forward)
+  if (held.has('arrowright') || held.has('d')) move.add(right)
+  if (held.has('arrowleft') || held.has('a')) move.sub(right)
+  if (move.lengthSq() === 0) return
+  move.normalize().multiplyScalar(dt * 16)
+  controls.target.add(move)
+  camera.position.add(move)
+  flight = null
+}
+
+// Keeps the view over the floor in sight
+function clampView() {
+  const places = [...rooms.values()].map((room) => room.place).filter((place) => place.level === currentLevel)
+  const reach = Math.max(HALL / 2 + D + 4, ...places.map((place) => Math.hypot(place.x, place.z) + W + 4))
+  const clamped = controls.target.clone()
+  clamped.x = Math.max(-reach, Math.min(reach, clamped.x))
+  clamped.z = Math.max(-reach, Math.min(reach, clamped.z))
+  const shift = clamped.sub(controls.target)
+  controls.target.add(shift)
+  camera.position.add(shift)
+}
+
+// Each room's back wall stands only while the camera is in front of it, so no room hides another
+function cutWalls() {
+  for (const room of rooms.values()) {
+    if (room.place.level !== currentLevel) continue
+    const back = new THREE.Vector3(-room.place.normal.x, 0, -room.place.normal.z)
+    const fromWall = new THREE.Vector3().subVectors(camera.position, room.group.position)
+    const isBehind = fromWall.dot(back) > 0
+    room.tall.visible = !isBehind
+    room.low.visible = isBehind
+  }
+}
+
+// The panel, laid out like a chat: the session's header (model, permission mode), a permission
+// request or question when there is one, its todo list, then Chat, Edits and Activity, and at the
+// bottom a composer that sends prompts, runs slash commands (with a menu), names files with @ and
+// attaches files. Or, for the empty room, the form for a new session
+let selected = null
+let tabTo = 'chat'
+const panel = document.getElementById('panel')
+let parts = {}
+// Each session's slash commands and project files, for the composer's menus
+const commandsBy = new Map()
+const filesBy = new Map()
+window.workshopCommands = (list) => commandsBy.set(list.id, list.commands)
+window.workshopFiles = (list) => filesBy.set(list.id, list.files)
+const MODELS = ['opus', 'sonnet', 'haiku']
+const EDIT_TOOLS = ['Edit', 'Write', 'MultiEdit', 'NotebookEdit']
+
+async function send(command) {
+  const response = await fetch('/command', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Workshop-Token': TOKEN },
+    body: JSON.stringify(command),
+  })
+  if (!response.ok) throw new Error('the workshop refused it (' + response.status + ')')
+}
+async function upload(file) {
+  const response = await fetch('/upload?session=' + encodeURIComponent(selected) + '&name=' + encodeURIComponent(file.name || 'pasted.png'), {
+    method: 'POST',
+    headers: { 'X-Workshop-Token': TOKEN },
+    body: file,
+  })
+  if (!response.ok) throw new Error('the upload was refused (' + response.status + ')')
+  return (await response.json()).path
+}
+function openPanel(id) {
+  selected = id
+  chipsKey = ''
+  panel.classList.add('open')
+  if (id !== 'new') {
+    load('sessions/' + id + '.cmds.js')
+    load('sessions/' + id + '.files.js')
+  }
+  buildPanel()
+}
+// Esc closes the panel, unless a field has the keys or a tour or a spot choice holds them; so does
+// a click on the floor away from every room
+window.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || selected === null || tourAt >= 0 || placing) return
+  if (event.target.closest && event.target.closest('input, textarea')) return
+  closePanel()
+})
+function closePanel() {
+  if (selected === 'new') newSlot = null
+  selected = null
+  chipsKey = ''
+  panel.classList.remove('open')
+}
+function canControl(state) {
+  return CAN_SEND && state.canControl === true
+}
+
+// The folders sessions ran in lately, from Claude Code's own history, newest first
+let projects = []
+window.workshopProjects = (list) => {
+  projects = list
+  if (selected === 'new' && parts.projects) parts.projects.replaceChildren(...projectButtons())
+}
+function projectButtons() {
+  if (projects.length === 0) return [el('div', { className: 'note', textContent: 'No recent projects yet.' })]
+  return projects.map((project) => {
+    const button = el('button', { className: 'item', title: project.dir }, el('span', { textContent: plain(project.dir.split('/').filter(Boolean).pop() ?? '/') }), el('span', { className: 'dim', textContent: plain(project.dir.replace(/^\/Users\/[^/]+/, '~')) }))
+    button.onclick = () => startIn(project.dir)
+    return button
+  })
+}
+async function startIn(dir) {
+  const spot = newSlot ?? ghost?.slot ?? freeSlot()
+  parts.status.className = 'note'
+  parts.status.textContent = 'starting Claude Code in ' + dir + '…'
+  try {
+    await send({ session: '_window', type: 'new-session', dir, isContinue: parts.keepGoing.checked, slot: spot })
+    reserved.set(spot, Date.now())
+  } catch (error) {
+    parts.status.className = 'failed'
+    parts.status.textContent = error.message
+  }
+}
+
+function buildNewSession(close) {
+  const spot = newSlot ?? ghost?.slot ?? freeSlot()
+  const elsewhere = el('button', { className: 'button', textContent: 'Choose another spot…' })
+  elsewhere.onclick = () => startPlacing('new')
+  parts.status = el('span', { className: 'note' })
+  parts.keepGoing = el('input', { type: 'checkbox' })
+  const choose = el('button', { className: 'button primary', textContent: 'Choose folder…' })
+  choose.onclick = async () => {
+    choose.disabled = true
+    try {
+      await send({ session: '_window', type: 'pick-folder', isContinue: parts.keepGoing.checked, slot: spot })
+      reserved.set(spot, Date.now())
+      parts.status.className = 'note'
+      parts.status.textContent = 'pick a folder in the dialog that opens; a Terminal starts Claude Code there'
+    } catch (error) {
+      parts.status.className = 'failed'
+      parts.status.textContent = error.message
+    }
+    setTimeout(() => (choose.disabled = false), 3000)
+  }
+  const path = el('input', { type: 'text', placeholder: '/path/to/a/folder' })
+  const go = el('button', { className: 'button', textContent: 'Start' })
+  go.onclick = () => path.value.trim() && startIn(path.value.trim())
+  path.addEventListener('keydown', (event) => event.key === 'Enter' && go.click())
+  parts.projects = el('div', { className: 'menu small projects' }, ...projectButtons())
+  load('projects.js')
+  panel.append(
+    el('div', { className: 'top' },
+      el('h2', {}, el('span', { textContent: 'New session' }), close),
+      el('div', { className: 'note', textContent: 'A Terminal window opens running Claude Code in the folder; its room appears here once it starts. macOS.' }),
+      el('div', { className: 'row wrap' }, el('span', { className: 'pill', textContent: describeSlot(spot) }), elsewhere),
+      el('label', { className: 'row note' }, parts.keepGoing, 'Continue the last conversation in that folder'),
+      el('div', { className: 'row' }, choose),
+      parts.status,
+    ),
+    el('div', { className: 'scroll' },
+      el('h3', { textContent: 'Recent projects' }),
+      parts.projects,
+      el('h3', { textContent: 'Or a folder', style: 'margin-top:12px' }),
+      el('div', { className: 'row' }, path, go),
+    ),
+  )
+}
+
+function buildPanel() {
+  panel.replaceChildren()
+  parts = { keys: {} }
+  const close = el('button', { id: 'close', textContent: '×', title: 'Close' })
+  close.onclick = closePanel
+  if (selected === 'new') return buildNewSession(close)
+  const state = states.get(selected)
+  if (!state) return closePanel()
+
+  // The header: how the session is, its model (click to change it) and its permission mode
+  parts.dot = el('span', { className: 'dot' })
+  parts.model = el('button', { className: 'pill', title: 'Change the model' })
+  parts.mode = el('span', { className: 'pill dim', title: 'Permission mode' })
+  parts.modelMenu = el('div', { className: 'menu small' })
+  parts.modelMenu.hidden = true
+  parts.model.onclick = () => (parts.modelMenu.hidden = !parts.modelMenu.hidden)
+  for (const name of MODELS) {
+    const item = el('button', { className: 'item', textContent: name })
+    item.onclick = async () => {
+      parts.modelMenu.hidden = true
+      await send({ session: selected, type: 'command', command: 'model', args: name }).catch((error) => (parts.sent.textContent = error.message))
+    }
+    parts.modelMenu.append(item)
+  }
+  const other = el('button', { className: 'item dim', textContent: 'other… (/model)' })
+  other.onclick = () => {
+    parts.modelMenu.hidden = true
+    parts.prompt.value = '/model '
+    parts.prompt.focus()
+    updateMenu()
+  }
+  parts.modelMenu.append(other)
+  parts.move = el('button', { id: 'move', textContent: '⇄', title: 'Move this room' })
+  parts.move.onclick = () => startPlacing('move', selected)
+  parts.end = el('button', { id: 'end', textContent: '⏻', title: 'End this session' })
+  parts.confirm = el('div')
+  parts.end.onclick = () => {
+    const working = states.get(selected)?.isWorking
+    const yes = el('button', { className: 'button deny', textContent: 'End session' })
+    const no = el('button', { className: 'button', textContent: 'Cancel' })
+    no.onclick = () => parts.confirm.replaceChildren()
+    yes.onclick = async () => {
+      yes.disabled = no.disabled = true
+      await send({ session: selected, type: 'end' }).catch((error) => (parts.sent.textContent = error.message))
+      parts.confirm.replaceChildren(el('div', { className: 'note', textContent: 'Saying goodbye…' }))
+    }
+    parts.confirm.replaceChildren(
+      el('div', { className: 'confirm' },
+        el('b', { textContent: 'End ' + state.project + '?' }),
+        el('div', { className: 'note', textContent: (working ? 'It is working right now; its turn will be stopped. ' : '') + 'Claude says goodbye, then exits in its terminal, as /exit does. The conversation stays on disk, so claude --continue there picks it up again.' }),
+        el('div', { className: 'row' }, yes, no),
+      ),
+    )
+  }
+  parts.title = el('div', { className: 'heading' })
+  parts.ask = el('div')
+  parts.todos = el('div')
+
+  // The tabs
+  parts.chat = el('div', { className: 'chat' })
+  parts.edits = el('div')
+  parts.agents = el('div', { className: 'list' })
+  parts.calls = el('div', { className: 'list' })
+  parts.hooks = el('div', { className: 'list' })
+  const pages = {
+    chat: parts.chat,
+    edits: parts.edits,
+    activity: el('div', {}, el('h3', { textContent: 'Agents' }), parts.agents, el('h3', { textContent: 'Tool calls', style: 'margin-top:12px' }), parts.calls, el('h3', { textContent: 'Hooks', style: 'margin-top:12px' }), parts.hooks),
+  }
+  const tabs = Object.keys(pages).map((name) => {
+    const tab = el('button', { className: 'tab', textContent: name[0].toUpperCase() + name.slice(1) })
+    tab.onclick = () => showTab(name)
+    return tab
+  })
+  const showTab = (name) => {
+    tabTo = name
+    Object.entries(pages).forEach(([key, page], i) => {
+      page.hidden = key !== name
+      tabs[i].classList.toggle('on', key === name)
+    })
+  }
+  parts.scroll = el('div', { className: 'scroll' }, ...Object.values(pages))
+
+  // The composer
+  parts.prompt = el('textarea', { placeholder: 'Message ' + state.project + '…   / for commands, @ for files, paste or drop to attach' })
+  parts.menu = el('div', { className: 'menu' })
+  parts.menu.hidden = true
+  parts.attached = el('div', { className: 'row wrap' })
+  parts.files = []
+  parts.picker = el('input', { type: 'file', multiple: true, hidden: true })
+  const attach = el('button', { className: 'button', textContent: '📎', title: 'Attach files' })
+  attach.onclick = () => parts.picker.click()
+  parts.picker.onchange = () => attachFiles([...parts.picker.files])
+  parts.send = el('button', { className: 'button primary', textContent: 'Send' })
+  parts.stop = el('button', { className: 'button', textContent: 'Stop' })
+  parts.sent = el('span', { className: 'note' })
+  parts.watchOnly = el('div', { className: 'note' })
+  parts.send.onclick = sendComposer
+  parts.stop.onclick = async () => {
+    parts.stop.disabled = true
+    await send({ session: selected, type: 'stop' }).catch((error) => (parts.sent.textContent = error.message))
+  }
+  parts.prompt.addEventListener('input', updateMenu)
+  parts.prompt.addEventListener('click', updateMenu)
+  parts.prompt.addEventListener('keydown', composerKeys)
+  parts.prompt.addEventListener('paste', (event) => {
+    const files = [...(event.clipboardData?.files ?? [])]
+    if (files.length > 0) {
+      event.preventDefault()
+      attachFiles(files)
+    }
+  })
+  panel.ondragover = (event) => event.preventDefault()
+  panel.ondrop = (event) => {
+    event.preventDefault()
+    attachFiles([...(event.dataTransfer?.files ?? [])])
+  }
+
+  panel.append(
+    el('div', { className: 'top' },
+      el('h2', {}, parts.dot, el('span', { textContent: plain(state.project) }), parts.model, parts.mode, close, parts.end, parts.move),
+      parts.modelMenu,
+      parts.confirm,
+      el('div', { className: 'path', textContent: plain(state.cwd) }),
+      parts.title,
+      parts.ask,
+      parts.todos,
+      el('div', { className: 'tabs' }, ...tabs),
+    ),
+    parts.scroll,
+    (parts.composer = el('div', { className: 'composer' }, parts.menu, parts.attached, parts.prompt, el('div', { className: 'row' }, attach, parts.send, parts.stop, parts.sent), parts.picker)),
+    parts.watchOnly,
+  )
+  showTab(tabTo)
+  updatePanel()
+}
+
+// The composer's menu: slash commands while the message is one, files after an @
+function updateMenu() {
+  const text = parts.prompt.value
+  const before = text.slice(0, parts.prompt.selectionStart)
+  const command = /^\/(\S*)$/.exec(before)
+  const file = /(?:^|\s)@([^\s@]*)$/.exec(before)
+  let items = []
+  if (command) {
+    const query = command[1].toLowerCase()
+    items = (commandsBy.get(selected) ?? [])
+      .filter((one) => one.name.toLowerCase().includes(query))
+      .sort((a, b) => Number(!a.name.toLowerCase().startsWith(query)) - Number(!b.name.toLowerCase().startsWith(query)))
+      .map((one) => ({ label: '/' + one.name, tag: sourceTag(one), hint: one.description, apply: () => (parts.prompt.value = '/' + one.name + ' ' + text.slice(before.length)) }))
+  } else if (file) {
+    const query = file[1].toLowerCase()
+    items = (filesBy.get(selected) ?? [])
+      .filter((path) => path.toLowerCase().includes(query))
+      .sort((a, b) => a.length - b.length)
+      .slice(0, 50)
+      .map((path) => ({ label: '@' + path, hint: '', apply: () => (parts.prompt.value = before.slice(0, before.length - file[1].length - 1) + '@' + path + ' ' + text.slice(before.length)) }))
+  }
+  parts.menuItems = items
+  parts.menuAt = 0
+  drawMenu()
+}
+// Where a slash command comes from, as a short tag: Claude Code's own, a plugin's (named), the
+// user's or project's own, or an MCP server's prompt
+function sourceTag(command) {
+  if (command.source === 'builtin') return 'built-in'
+  if (command.source === 'plugin') return command.plugin ? 'plugin · ' + command.plugin : 'plugin'
+  if (command.source === 'user') return 'yours'
+  if (command.source === 'mcp') return 'mcp'
+  return ''
+}
+function drawMenu() {
+  const items = parts.menuItems ?? []
+  parts.menu.hidden = items.length === 0
+  parts.menu.replaceChildren(
+    ...items.map((item, i) => {
+      const row = el('button', { className: 'item' + (i === parts.menuAt ? ' on' : '') }, el('span', { textContent: item.label }), item.tag ? el('span', { className: 'pill', textContent: item.tag }) : null, el('span', { className: 'dim', textContent: item.hint }))
+      row.onmousedown = (event) => {
+        event.preventDefault()
+        pick(i)
+      }
+      return row
+    }),
+  )
+  parts.menu.children[parts.menuAt]?.scrollIntoView({ block: 'nearest' })
+}
+function pick(i) {
+  parts.menuItems[i].apply()
+  parts.menuItems = []
+  drawMenu()
+  parts.prompt.focus()
+}
+function composerKeys(event) {
+  const items = parts.menuItems ?? []
+  if (items.length > 0) {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      parts.menuAt = (parts.menuAt + (event.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length
+      return drawMenu()
+    }
+    if (event.key === 'Tab' || (event.key === 'Enter' && !event.shiftKey && !commandIn(parts.prompt.value.trimEnd() + ' ')?.[2])) {
+      event.preventDefault()
+      return pick(parts.menuAt)
+    }
+    if (event.key === 'Escape') {
+      parts.menuItems = []
+      return drawMenu()
+    }
+  }
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    sendComposer()
+  }
+}
+async function attachFiles(files) {
+  for (const file of files) {
+    const chip = el('span', { className: 'pill', textContent: '⇡ ' + (file.name || 'pasted image') })
+    parts.attached.append(chip)
+    try {
+      const path = await upload(file)
+      parts.files.push(path)
+      chip.textContent = '📎 ' + (file.name || 'pasted image')
+      chip.title = path
+    } catch (error) {
+      chip.className = 'pill failed'
+      chip.textContent = error.message
+    }
+  }
+}
+// The slash command a message is, if it is one: the longest known name it starts with (names
+// may have spaces, as an MCP prompt's do), else its first word
+function commandIn(text) {
+  if (!text.startsWith('/')) return null
+  const known = (commandsBy.get(selected) ?? [])
+    .map((one) => one.name)
+    .filter((name) => text === '/' + name || text.startsWith('/' + name + ' '))
+    .sort((a, b) => b.length - a.length)[0]
+  if (known) return [text, known, text.slice(known.length + 1).trim()]
+  return /^\/(\S+)\s*([\s\S]*)$/.exec(text)
+}
+
+// Sends the composer: a slash command runs in the session as if typed there; anything else is a
+// prompt, with the attached files' paths for Claude to read
+async function sendComposer() {
+  const text = parts.prompt.value.trim()
+  if (!text && parts.files.length === 0) return
+  parts.sending = true
+  parts.send.disabled = true
+  try {
+    const command = commandIn(text)
+    if (command && parts.files.length === 0) {
+      await send({ session: selected, type: 'command', command: command[1], args: command[2].trim() })
+      parts.sent.textContent = '/' + command[1] + ' sent ✓'
+    } else {
+      const attached = parts.files.length === 0 ? '' : '\n\nAttached files (read them): ' + parts.files.join(', ')
+      await send({ session: selected, type: 'prompt', text: text + attached })
+      parts.sent.textContent = 'sent ✓'
+    }
+    parts.sent.className = 'sent'
+    parts.prompt.value = ''
+    parts.files = []
+    parts.attached.replaceChildren()
+  } catch (error) {
+    parts.sent.className = 'failed'
+    parts.sent.textContent = error.message
+  }
+  parts.sending = false
+  parts.send.disabled = false
+}
+
+// Model text as Markdown, cleaned of anything that could run in this page, and of images, which
+// would load from wherever the text points
+// Model text as Markdown. Raw HTML in it is shown as text, never parsed; what Markdown makes is
+// cleaned to plain formatting and links; a link opens in a tab of its own, never in this one
+const SAFE_TAGS = ['p', 'br', 'strong', 'em', 'b', 'i', 'code', 'pre', 'ul', 'ol', 'li', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'del']
+function escapeHtml(text) {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+if (window.marked) marked.use({ renderer: { html: (html) => escapeHtml(typeof html === 'string' ? html : html.text ?? '') } })
+function markdown(text) {
+  const node = el('div', { className: 'md' })
+  if (!window.marked || !window.DOMPurify) {
+    node.textContent = text
+    return node
+  }
+  node.innerHTML = DOMPurify.sanitize(marked.parse(text), { ALLOWED_TAGS: SAFE_TAGS, ALLOWED_ATTR: ['href', 'title'], ALLOW_DATA_ATTR: false })
+  for (const link of node.querySelectorAll('a')) {
+    if (!/^https?:\/\//i.test(link.getAttribute('href') ?? '')) link.removeAttribute('href')
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    // Where a link really goes, beside what it says
+    try {
+      const host = new URL(link.href).host
+      link.title = link.href
+      link.append(el('span', { className: 'dim', textContent: ' ↗ ' + host }))
+    } catch {
+      link.removeAttribute('href')
+    }
+  }
+  return node
+}
+function diffBlock(diff) {
+  return el(
+    'div',
+    { className: 'diff' },
+    ...diff.split('\n').map((line) => el('div', { className: line.startsWith('+') ? 'add' : line.startsWith('-') ? 'del' : '', textContent: line || ' ' })),
+  )
+}
+function clock(at) {
+  return new Date(at).toTimeString().slice(0, 8)
+}
+function refill(name, key, build) {
+  if (parts.keys[name] === key) return false
+  parts.keys[name] = key
+  parts[name].replaceChildren(...build())
+  return true
+}
+
+// A permission request or a question, with the answers it can take
+// Text from a session, made safe to read: characters that reorder or hide text (bidi controls,
+// zero-width and tag characters) shown as their codes, long runs of spaces counted. Says whether
+// it found any, since a command hiding text must not be allowed from here
+const HIDDEN = /[؜​-‏‪-‮⁠-⁤⁦-⁩﻿]|[\u{e0000}-\u{e007f}]/gu
+function reveal(text) {
+  const raw = String(text ?? '')
+  const hasHidden = new RegExp(HIDDEN.source, 'u').test(raw)
+  const shown = raw.replace(HIDDEN, (char) => '⟨U+' + char.codePointAt(0).toString(16).toUpperCase().padStart(4, '0') + '⟩').replace(/ {8,}/g, (run) => ' ␠×' + run.length + ' ')
+  return { text: shown, hasHidden }
+}
+// A name, a title or a path from a session, shown with its hidden characters revealed
+function plain(text) {
+  return reveal(text).text
+}
+
+// A permission request or a question, with the answers it can take; oldest first. What it would
+// really do is shown whole and readable; when it is not (cut, hiding characters, leaving the
+// sandbox), the window can only deny, and the terminal can allow
+function askCard(state, ask, able) {
+  const blocked = []
+  const answer = (decision, extra = {}) => async () => {
+    const buttons = [...card.querySelectorAll('button')]
+    for (const button of buttons) button.disabled = true
+    try {
+      await send({ session: selected, type: 'permission', id: ask.id, decision, ...extra })
+      parts.countdown.textContent = decision === 'allow' ? 'sent ✓' : 'denied'
+      parts.countdown.dataset.done = '1'
+    } catch (error) {
+      // Not sent: say so, and let the person try again
+      parts.countdown.textContent = 'not sent: ' + error.message + ' (try again, or answer in the terminal)'
+      parts.countdown.dataset.done = '1'
+      for (const button of buttons) button.disabled = !able || (button.classList.contains('allow') && blocked.length > 0)
+    }
+  }
+  const button = (text, className, onclick) => {
+    const one = el('button', { className: 'button ' + className, textContent: text, disabled: true })
+    one.onclick = onclick
+    return one
+  }
+  const shown = (text, className = '') => {
+    const seen = reveal(text)
+    if (seen.hasHidden && !blocked.includes('hidden')) blocked.push('hidden')
+    return el('code', { className, textContent: seen.text })
+  }
+  parts.countdown = el('span', { className: 'note' })
+  const body = []
+  const buttons = []
+  if (ask.waiting > 0) body.push(el('div', { className: 'note', textContent: '+' + ask.waiting + ' more waiting after this one' }))
+  if (ask.tool === 'AskUserQuestion' && ask.questions) {
+    const chosen = {}
+    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), ' asks you'))
+    for (const question of ask.questions) {
+      chosen[question.question] = new Set()
+      const options = el('div', { className: 'row wrap' })
+      for (const option of question.options) {
+        const choice = el('button', { className: 'button option', textContent: plain(option.label), title: plain(option.description), disabled: !able })
+        choice.dataset.label = option.label
+        choice.onclick = () => {
+          const picked = chosen[question.question]
+          if (!question.multiSelect) picked.clear()
+          if (picked.has(option.label)) picked.delete(option.label)
+          else picked.add(option.label)
+          for (const node of options.children) node.classList.toggle('on', picked.has(node.dataset.label))
+        }
+        options.append(choice)
+      }
+      body.push(el('div', { className: 'question' }, el('div', { className: 'heading', textContent: plain(question.header) }), el('div', { textContent: plain(question.question) }), options))
+    }
+    buttons.push(button('Answer', 'allow', () => answer('allow', { answers: Object.fromEntries(Object.entries(chosen).filter(([, picked]) => picked.size > 0).map(([q, picked]) => [q, [...picked].join(', ')])) })()))
+  } else if (ask.tool === 'ExitPlanMode') {
+    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), ' has a plan ready'))
+    if (ask.plan) {
+      const seen = reveal(ask.plan)
+      if (seen.hasHidden) blocked.push('hidden')
+      body.push(el('div', { className: 'plan' }, markdown(seen.text)))
+    } else body.push(el('div', { className: 'note', textContent: 'The plan is shown in the terminal.' }))
+    buttons.push(button('Approve', 'allow', answer('allow')), button('Approve + accept edits', 'allow', answer('allow', { mode: 'acceptEdits' })), button('Keep planning', 'deny', answer('deny')))
+  } else {
+    body.push(el('div', {}, el('b', { textContent: plain(ask.agent) }), ' wants to use ', el('b', { textContent: plain(ask.tool) })))
+    // What the tool will really do: the file, the command with its flags, the edit's diff, or
+    // its whole input
+    if (ask.filePath) body.push(el('div', { className: 'path' }, 'file: ', el('b', { textContent: plain(ask.filePath) })))
+    if (ask.command) body.push(shown(ask.command))
+    for (const flag of ask.flags ?? []) body.push(el('div', { className: flag.startsWith('dangerouslyDisableSandbox') ? 'failed' : 'note', textContent: plain(flag) }))
+    if (ask.diff) {
+      const seen = reveal(ask.diff)
+      if (seen.hasHidden) blocked.push('hidden')
+      body.push(diffBlock(seen.text))
+    } else if (ask.detail) body.push(shown(ask.detail, 'input'))
+    if (ask.canAlways && ask.rules?.length) body.push(el('div', { className: 'note' }, 'Always allow would add: ', ...ask.rules.map((rule) => el('div', { className: 'rule', textContent: plain(rule) }))))
+    const allow = (text, extra) => button(text, 'allow', answer('allow', extra))
+    buttons.push(allow('Allow'))
+    if (ask.canAlways) buttons.push(allow('Always allow', { always: true }))
+    if (ask.canAcceptEdits && EDIT_TOOLS.includes(ask.tool) && state.permissionMode === 'default') buttons.push(allow('Allow + accept edits', { mode: 'acceptEdits' }))
+    buttons.push(button('Deny', 'deny', answer('deny')))
+  }
+  if (ask.isCut) blocked.push('cut')
+  if (ask.leavesSandbox) blocked.push('sandbox')
+  const why = { cut: 'Too long to show whole here.', hidden: 'It holds characters that hide or reorder text (shown as ⟨U+…⟩).', sandbox: 'It would run outside the sandbox.' }
+  if (blocked.length > 0) body.push(el('div', { className: 'failed', textContent: blocked.map((one) => why[one]).join(' ') + ' Here it can only be denied; read it, and allow it if you want, in the terminal.' }))
+  const card = el('div', { className: 'ask' }, ...body, el('div', { className: 'row wrap' }, ...buttons), parts.countdown)
+  // A new card waits a moment before taking clicks, so a click meant for the one before it
+  // never lands on it
+  setTimeout(() => {
+    for (const one of buttons) one.disabled = !able || (one.classList.contains('allow') && blocked.length > 0)
+  }, 1000)
+  return card
+}
+
+function updatePanel() {
+  if (selected === null || selected === 'new' || !parts.dot) return
+  const state = states.get(selected)
+  if (!state) return
+  const able = canControl(state)
+  parts.dot.className = 'dot ' + statusOf(state)
+  parts.model.textContent = (state.model ?? 'model') + ' ▾'
+  parts.model.disabled = !able
+  parts.end.disabled = !able || state.isEnding === true
+  parts.move.disabled = !able
+  parts.mode.textContent = state.permissionMode ?? ''
+  parts.mode.hidden = !state.permissionMode
+  parts.prompt.disabled = !able
+  parts.send.disabled = !able || parts.sending === true
+  parts.stop.disabled = !able || !state.isWorking
+  if (!state.guest) parts.watchOnly.textContent = able ? '' : CAN_SEND ? 'This session cannot take commands yet.' : 'This window can only watch: open it with /workshop 3d where python3 is available to send commands.'
+  // A guest: to watch only, and how to make it a room of its own
+  if (state.guest && !parts.watchOnly.querySelector('.guest-note')) {
+    parts.watchOnly.replaceChildren(
+      el('div', { className: 'guest-note' },
+        el('b', { textContent: '👁 A guest, to watch' }),
+        el('div', { textContent: 'This session started before the workshop was set up, so it runs without the mod: the window reads its transcript, but cannot prompt it, stop it or answer for it.' }),
+        el('div', {}, 'To use it from here, restart it in its folder with ', el('code', { textContent: 'claude --continue' }), ' (the same conversation), or try ', el('code', { textContent: '/reload-plugins' }), ' in it.'),
+      ),
+    )
+  }
+  parts.composer.hidden = state.guest === true
+  parts.move.hidden = parts.end.hidden = parts.model.hidden = state.guest === true
+  parts.title.textContent = state.title ? '✦ ' + plain(state.title) : ''
+
+  const ask = state.permission
+  refill('ask', ask ? ask.id : '', () => (ask ? [askCard(state, ask, able)] : []))
+  if (ask && parts.countdown && !parts.countdown.dataset.done) {
+    parts.countdown.textContent = Math.max(0, Math.round((ask.until - Date.now()) / 1000)) + ' s, then the terminal asks'
+  }
+
+  // The todo list, as the model last wrote it
+  const todos = state.todos ?? []
+  refill('todos', JSON.stringify(todos), () =>
+    todos.length === 0
+      ? []
+      : [
+          el('div', { className: 'todos' },
+            ...todos.map((todo) => el('div', { className: 'todo ' + todo.status }, el('span', { textContent: todo.status === 'completed' ? '✓' : todo.status === 'in_progress' ? '◐' : '○' }), el('span', { textContent: todo.status === 'in_progress' ? todo.activeForm || todo.content : todo.content }))),
+          ),
+        ],
+  )
+
+  if (!parts.listsAt || Date.now() - parts.listsAt > 60000) {
+    parts.listsAt = Date.now()
+    load('sessions/' + selected + '.cmds.js')
+    load('sessions/' + selected + '.files.js')
+  }
+  const more = mores.get(selected)
+  if ((!more || more.version !== state.moreVersion) && parts.moreAsked !== state.moreVersion) {
+    parts.moreAsked = state.moreVersion
+    load('sessions/' + selected + '.more.js')
+  }
+
+  // The conversation, then what the model writes now, kept scrolled to the bottom
+  const live = state.live ?? { text: '', thinking: '' }
+  const main = state.agents.find((one) => one.isMain)
+  const atBottom = parts.scroll.scrollHeight - parts.scroll.scrollTop - parts.scroll.clientHeight < 40
+  const changed = refill('chat', JSON.stringify([more?.version, state.isWorking, live.text, main?.isThinking, live.thinking.slice(-200)]), () => {
+    const rows = []
+    for (const message of more?.chat ?? []) {
+      if (message.role === 'user') {
+        if (!message.text.trim()) continue
+        // The engine's own notes, as short lines: a background task, a slash command, its output
+        if (message.kind === 'notice') rows.push(el('div', { className: 'msg notice', textContent: '⚙ ' + message.text }))
+        else if (message.kind === 'command') rows.push(el('div', { className: 'msg notice', textContent: '› ' + message.text }))
+        else if (message.kind === 'output') rows.push(el('div', { className: 'msg notice output', textContent: message.text }))
+        else rows.push(el('div', { className: 'msg user' }, message.isFromWindow ? el('div', { className: 'tag', textContent: 'from the window' }) : null, el('div', { textContent: message.text })))
+      } else {
+        const tools = message.tools.length === 0 ? null : el('div', { className: 'tools' }, ...message.tools.map((use) => el('span', { className: 'pill', textContent: use.tool + (use.label && use.label !== use.tool ? ' · ' + use.label : '') })))
+        if (!message.text.trim() && !tools) continue
+        rows.push(el('div', { className: 'msg' }, message.text.trim() ? markdown(message.text) : null, tools))
+      }
+    }
+    for (const entry of more?.commandLog ?? []) {
+      rows.push(el('div', { className: 'msg command' }, el('div', { className: 'tag', textContent: clock(entry.at) + ' · ' + entry.command }), entry.text ? el('div', { className: 'note', textContent: entry.text }) : null))
+    }
+    if (state.isWorking) {
+      if (main?.isThinking) rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: 'thinking…' }), el('div', { className: 'thinking', textContent: live.thinking.slice(-600) })))
+      else if (live.text.trim()) rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: 'writing…' }), markdown(live.text)))
+      else rows.push(el('div', { className: 'msg' }, el('div', { className: 'tag', textContent: 'working…' })))
+    }
+    if (rows.length === 0) rows.push(el('div', { className: 'note', textContent: 'No messages yet.' }))
+    return rows
+  })
+  if (changed && atBottom) parts.scroll.scrollTop = parts.scroll.scrollHeight
+
+  if (more) {
+    refill('edits', 'e' + more.version, () =>
+      more.edits.length === 0
+        ? [el('div', { className: 'note', textContent: 'No edits yet.' })]
+        : [...more.edits].reverse().flatMap((edit) => [el('div', { className: 'heading', textContent: clock(edit.at) + ' · ' + edit.file }), diffBlock(edit.diff)]),
+    )
+  }
+  refill('agents', JSON.stringify(state.agents.map((one) => [one.name, one.station, one.bubble])), () =>
+    state.agents.map((one) => el('div', { className: 'line' }, el('span', { textContent: '●', style: 'color:' + (/^#[0-9a-f]{6}$/i.test(one.color) ? one.color : '#8b8b96') }), el('span', { textContent: one.name }), el('span', { className: 'dim', textContent: one.station ?? 'idle' }), el('span', { textContent: one.bubble || '' }))),
+  )
+  refill('calls', JSON.stringify(state.recentCalls), () =>
+    [...(state.recentCalls ?? [])].reverse().map((call) => el('div', { className: 'line' }, el('span', { className: 'dim', textContent: clock(call.at) }), el('span', { className: call.result, textContent: call.tool }), el('span', { textContent: call.label }))),
+  )
+  refill('hooks', JSON.stringify(state.recentHooks), () =>
+    [...(state.recentHooks ?? [])].reverse().map((hook) => el('div', { className: 'line' }, el('span', { className: 'dim', textContent: clock(hook.at) }), el('span', { textContent: hook.event, style: 'color:' + hookColor(hook.event) }), el('span', { className: 'dim', textContent: hook.who }))),
+  )
+}
+
+function resize() {
+  renderer.setSize(window.innerWidth, window.innerHeight)
+  camera.aspect = window.innerWidth / window.innerHeight
+  camera.updateProjectionMatrix()
+}
+window.addEventListener('resize', resize)
+resize()
+
+// The session a room is for
+function idOf(room) {
+  for (const [id, one] of rooms) if (one === room) return id
+  return null
+}
+
+// Sleep: when the session says its Claude has idled long enough, it walks to the rug, settles
+// down with its eyes shut, breathes slowly under rising z's, and wakes at the first sign of work.
+// The session decides, so the window and the terminal pane sleep and wake together; a session
+// running an older mod that does not say gets the window's own count
+function sleep(room, state, t, dt) {
+  const main = room.agents.get('main')
+  if (!main) return
+  if (typeof main.state.isAsleep === 'boolean') {
+    main.sleepy = main.state.isAsleep
+  } else {
+    const isBusy = statusOf(state) !== 'idle' || state.agents.some((one) => one.calls > 0 || one.isThinking)
+    if (isBusy) room.activeAt = Date.now()
+    main.sleepy = Date.now() - room.activeAt > SLEEP_MS
+  }
+  const isLying = main.sleepy && !main.walking
+  const squash = isLying ? 0.8 + Math.sin(t * 1.6) * 0.03 : 1
+  main.inner.scale.y += (squash - main.inner.scale.y) * Math.min(1, dt * 4)
+  for (const eye of main.eyes) eye.scale.y = isLying ? 0.15 : 1
+  if (main.bubble) main.bubble.visible = !isLying
+  const p = main.group.position
+  room.zs.forEach((z, i) => {
+    z.visible = isLying
+    if (!isLying) return
+    const phase = (t * 0.35 + i / 3) % 1
+    z.position.set(p.x + 0.3 + phase * 0.7, 1.2 + phase * 1.3, p.z)
+    z.material.opacity = Math.min(1, (1 - phase) * 1.6)
+    z.scale.setScalar(0.4 + phase * 0.5).multiply(new THREE.Vector3(1.4, 1, 1))
+  })
+}
+
+// The pile of sheets on the tray: one a finished answer, thicker for a longer one
+function drawPapers(room, state) {
+  const shown = Math.min(room.papersShown, 40)
+  if (room.papers.children.length === shown) return
+  room.papers.clear()
+  const meta = (state.answersMeta ?? []).slice(-shown)
+  let y = 0
+  meta.forEach((answer, i) => {
+    const thickness = 0.012 + Math.min(answer.chars / 20000, 1) * 0.03
+    const sheet = new THREE.Mesh(new THREE.BoxGeometry(0.5, thickness, 0.36), material(i % 2 === 0 ? 0xe8e2d0 : 0xdcd5c0))
+    sheet.position.set(Math.sin(i * 2.3) * 0.04, y + thickness / 2, Math.cos(i * 1.7) * 0.03)
+    sheet.rotation.y = Math.sin(i * 1.3) * 0.25
+    sheet.castShadow = true
+    room.papers.add(sheet)
+    y += thickness
+  })
+}
+
+// Wraps text into lines of at most `width` characters, keeping the last `rows`
+function tailLines(text, width, rows) {
+  const lines = []
+  for (const paragraph of text.replace(/\r/g, '').split('\n')) {
+    let rest = paragraph
+    if (rest === '') lines.push('')
+    while (rest.length > 0) {
+      lines.push(rest.slice(0, width))
+      rest = rest.slice(width)
+    }
+  }
+  return lines.slice(-rows)
+}
+
+// The wall screen: what the model is writing, or thinking, or else what the room is doing
+function drawScreen(room, state, t) {
+  const live = state.live ?? { text: '', thinking: '' }
+  const main = state.agents.find((one) => one.isMain)
+  const isThinking = main?.isThinking === true
+  const cursor = state.isWorking && Math.floor(t * 2) % 2 === 0
+  const key = [state.isEnding, live.text.slice(-400), isThinking, live.thinking.slice(-120), cursor, state.isWorking, state.title].join('|')
+  if (key === room.screen.key) return
+  room.screen.key = key
+  const ctx = room.screen.canvas.getContext('2d')
+  ctx.fillStyle = '#0f1512'
+  ctx.fillRect(0, 0, 1024, 192)
+  ctx.font = '28px ui-monospace, Menlo, monospace'
+  ctx.textBaseline = 'top'
+  let lines
+  if (state.isEnding) {
+    ctx.fillStyle = '#c8f7d0'
+    lines = ['session ending…', 'bye 👋']
+  } else if (isThinking) {
+    ctx.fillStyle = '#8b8b96'
+    lines = ['thinking…', ...tailLines(live.thinking.replace(/\s+/g, ' '), 58, 4)]
+  } else if (live.text.trim() !== '') {
+    ctx.fillStyle = '#c8f7d0'
+    lines = tailLines(live.text, 58, 5)
+  } else {
+    ctx.fillStyle = '#5f7a66'
+    lines = [state.isWorking ? 'working…' : 'idle', ...(state.title ? [state.title] : [])]
+  }
+  lines.forEach((line, i) => ctx.fillText(line, 22, 14 + i * 34))
+  if (cursor && !isThinking) {
+    const last = lines.at(-1) ?? ''
+    ctx.fillRect(22 + ctx.measureText(last).width + 4, 14 + (lines.length - 1) * 34, 14, 28)
+  }
+  room.screen.texture.needsUpdate = true
+}
+
+// The sheet over the editing desk, shown for a while after each edit with its diff
+function drawSheet(room, state) {
+  const edit = state.lastEdit
+  const isFresh = edit && (Date.now() - edit.at < 25000 || state.busy.edit)
+  room.sheet.mesh.visible = Boolean(isFresh)
+  if (!isFresh) return
+  room.sheet.mesh.position.y = 2.1 + Math.sin(Date.now() / 500) * 0.04
+  const key = edit.at + edit.file
+  if (key === room.sheet.key) return
+  room.sheet.key = key
+  const ctx = room.sheet.canvas.getContext('2d')
+  ctx.fillStyle = '#efe9d8'
+  ctx.fillRect(0, 0, 512, 384)
+  ctx.font = '600 26px ui-monospace, Menlo, monospace'
+  ctx.fillStyle = '#16161c'
+  ctx.textBaseline = 'top'
+  ctx.fillText(edit.file.slice(0, 30), 18, 14)
+  ctx.font = '20px ui-monospace, Menlo, monospace'
+  edit.lines.slice(0, 13).forEach((line, i) => {
+    ctx.fillStyle = line.startsWith('+') ? '#1f7a32' : line.startsWith('-') ? '#b3272d' : '#55555f'
+    ctx.fillText(line.slice(0, 40), 18, 56 + i * 25)
+  })
+  room.sheet.texture.needsUpdate = true
+}
+
+// The flask: its liquid rises toward how full the context is, and its label says so and what the
+// session has cost
+function drawFlask(room, state, dt) {
+  const percent = state.context?.percent ?? 0
+  const flask = room.flask
+  flask.level += (percent / 100 - flask.level) * Math.min(1, dt * 3)
+  flask.liquid.scale.y = Math.max(0.001, flask.level * 1.4)
+  flask.liquid.position.y = 0.12 + flask.liquid.scale.y / 2
+  const color = percent >= 85 ? 0xe5484d : percent >= 60 ? 0xe3b341 : 0x3fb950
+  flask.liquid.material.color.copy(srgb(color))
+  flask.liquid.material.emissive.copy(srgb(color))
+  const text = (state.context?.percent == null ? '—' : Math.round(percent) + '%') + (state.costUsd == null ? '' : ' · $' + state.costUsd.toFixed(2))
+  if (text === flask.key) return
+  flask.key = text
+  if (flask.label) {
+    room.group.remove(flask.label)
+    dispose(flask.label)
+  }
+  flask.label = label(text, { size: 28, scale: 0.01, background: 'rgba(36, 34, 43, 0.85)' })
+  flask.label.position.set(13.2, 2.0, 1.0)
+  room.group.add(flask.label)
+}
+
+// The tours: cards of short steps, the view flying to what each is about while a ring on the floor
+// pulses around it, or a part of the panel glowing. The main one shows by itself each time the
+// window opens, until the person ticks "Don't show this again"; the others are in the ? menu
+const TOURS = {
+  main: {
+    name: 'The workshop in a minute',
+    steps: [
+      { title: 'Welcome to the agent workshop', text: 'Every Claude Code session running this mod has a room here, in any project. Rooms line a corridor, then corridors meet in a hall, then floors stack up as you open more sessions.', focus: 'room' },
+      { title: 'Getting around', text: 'Drag to move, right-drag to turn, scroll to zoom, <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or the arrows to walk. Click a chip at the top, or a room, to fly there.', focus: null },
+      { title: 'One room, one session', text: 'The sign names its project (and, with titles on, what it is doing). The lamp over the door is <b>green</b> while it works, <b>amber</b> while it waits for you, grey while idle. Idle long enough, Claude naps on the rug.', focus: 'door', ringScale: 1.3 },
+      { title: 'Stations are tools', text: 'Claude walks to the station of each tool it calls: <b>shell</b> for Bash, <b>files</b> for reading and searching, <b>edit</b> for edits, <b>web</b>, <b>mcp</b> for MCP tools, and the round table for <b>agents</b>.', focus: 'shell' },
+      { title: 'Subagents use the door', text: 'Each subagent comes in through the door as a smaller Claude in its own color, works at its stations, and leaves the same way when it is done.', focus: 'door' },
+      { title: 'Watch it think and write', text: 'The screen on the back wall shows the answer as it streams. A thought cloud floats over an agent while it thinks.', focus: 'screen' },
+      { title: 'Answers, edits, context', text: 'Finished answers pile up as sheets on the tray by the door. After an edit, its diff hangs over the edit desk. The flask fills with the context window and shows what the session has cost.', focus: 'flask' },
+      { title: 'Talk to a session', text: 'Click a room to open its panel: the chat, a box to prompt it (<kbd>/</kbd> for its slash commands, <kbd>@</kbd> for files, paste or drop to attach), the model, <b>Stop</b>, its edits and activity.', focus: 'room', openPanel: true },
+      { title: 'Answer from here', text: 'Permission requests show up in the panel with <b>Allow</b>, <b>Always allow</b>, <b>Allow + accept edits</b> and <b>Deny</b>; plans and Claude\'s questions too. The window has a little while to answer, then the terminal asks.', focus: 'room', openPanel: true, demo: 'permission' },
+      { title: 'Start, place and end sessions', text: 'The dashed room starts a new session in a folder you pick, wherever you like. <b>⇄</b> in a panel moves a room; <b>⏻</b> ends a session: Claude waves goodbye, and the room folds away.', focus: 'ghost' },
+      { title: 'That is it', text: 'The <b>?</b> menu has this tour and shorter ones on each part. <b>titles</b> at the top names each turn with Haiku (it costs tokens, so it is off by default). Session state stays on this machine; the window loads its 3D and text libraries from a CDN.', focus: null },
+    ],
+  },
+  panel: {
+    name: 'Talking to a session',
+    steps: [
+      { title: 'The panel', text: 'Clicking a room opens its panel. On top: how the session is, its project and folder, and what it is doing.', focus: 'room', openPanel: true },
+      { title: 'Model and mode', text: 'The model chip switches the session\'s model (it runs <kbd>/model</kbd> there). Beside it, the permission mode the session is in.', openPanel: true, highlight: '#panel h2 .pill' },
+      { title: 'Prompt it', text: 'Type and press <kbd>Enter</kbd>: the prompt goes to that session at once, and starts when it is free. <kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line.', openPanel: true, highlight: '#panel textarea' },
+      { title: 'Stop', text: '<b>Stop</b> ends the turn the session is running, as <kbd>Esc</kbd> does in its terminal.', openPanel: true, highlight: '#panel .composer .button:not(.primary)' },
+      { title: 'Chat', text: 'The conversation: your prompts, Claude\'s answers with the tools each used, and below, what it writes right now. Notes from Claude Code itself show as short grey lines.', openPanel: true, highlight: '#panel .tabs .tab:nth-child(1)' },
+      { title: 'Edits and Activity', text: '<b>Edits</b> has the diff of every edit. <b>Activity</b> lists the agents, the latest tool calls and the hook events. The todo list shows above the tabs while Claude keeps one.', openPanel: true, highlight: '#panel .tabs' },
+    ],
+  },
+  commands: {
+    name: 'Slash commands, files and attachments',
+    steps: [
+      { title: 'Slash commands', text: 'Type <kbd>/</kbd> in the prompt box: the menu lists the session\'s commands and skills, tagged by where they come from. Pick with the arrows and <kbd>Tab</kbd>; it runs as if typed in that terminal.', openPanel: true, highlight: '#panel textarea', type: '/' },
+      { title: 'Commands that draw', text: 'A command with a screen of its own, like <kbd>/config</kbd>, opens it in the session\'s terminal. With an argument, most act at once: <kbd>/model sonnet</kbd>, <kbd>/compact keep the plan</kbd>, <kbd>/plan</kbd>.', openPanel: true, highlight: '#panel textarea' },
+      { title: 'Files with @', text: 'Type <kbd>@</kbd> and part of a name for a menu of the project\'s files; the path goes into the prompt for Claude to read.', openPanel: true, highlight: '#panel textarea', type: '@' },
+      { title: 'Attachments', text: 'Paste an image, drop files on the panel, or use the paper clip. They are saved on this machine and their paths go with the prompt.', openPanel: true, highlight: '#panel .composer .button:first-child' },
+    ],
+  },
+  permissions: {
+    name: 'Permissions, plans and questions',
+    steps: [
+      { title: 'A permission request', text: 'When a session asks, its lamp turns amber and its panel shows what it wants to do: the command, or the edit\'s diff.', focus: 'door', openPanel: true, demo: 'permission' },
+      { title: 'The answers', text: '<b>Allow</b> once; <b>Always allow</b> adds the rule the terminal would offer; <b>Allow + accept edits</b> also switches the session to accept edits; <b>Deny</b>.', openPanel: true, demo: 'permission', highlight: '#panel .ask .row' },
+      { title: 'Plans', text: 'Coming out of plan mode, the plan shows here to read: <b>Approve</b>, approve and accept edits, or keep planning.', openPanel: true, demo: 'plan' },
+      { title: 'Questions', text: 'When Claude asks a question with choices, pick yours and <b>Answer</b>.', openPanel: true, demo: 'question' },
+      { title: 'The clock', text: 'The window has 25 seconds to answer a request, two minutes for a plan or a question. After that the terminal asks as usual, so nothing waits on a window nobody is looking at.', openPanel: true, demo: 'permission', highlight: '#panel .ask .note' },
+    ],
+  },
+  room: {
+    name: 'Reading a room',
+    steps: [
+      { title: 'The lamp', text: 'Over the door: <b>green</b> while the session works, <b>amber</b> while it waits for you, <b>red</b> while it ends, grey while idle.', focus: 'door', ringScale: 1.3 },
+      { title: 'The screen', text: 'What the model writes, as it streams; "thinking…" and its thoughts while it thinks.', focus: 'screen' },
+      { title: 'The cloud and the nap', text: 'A thought cloud over an agent: it is thinking. Idle a while, Claude lies down on the rug, z\'s rising, and wakes at the first work.', focus: 'room' },
+      { title: 'The tray', text: 'Each finished answer is carried here as a sheet; a longer answer makes a thicker one.', focus: 'tray' },
+      { title: 'The edit desk', text: 'After an edit, a sheet with its diff floats over the desk for a while.', focus: 'edit' },
+      { title: 'The flask', text: 'How full the context window is: amber from 60 %, red from 85 %, down after a compaction. Its label says what the session has cost.', focus: 'flask' },
+    ],
+  },
+  building: {
+    name: 'Building: spots, floors and moves',
+    steps: [
+      { title: 'How it grows', text: 'Three rooms along a corridor, then three facing them; then corridors east, west, north and south of the hall; then floors above and below, with a lift in the hall.', focus: 'room' },
+      { title: 'Floors', text: 'With rooms on more than one floor, the floor buttons at the top switch between them.', highlight: '#floors' },
+      { title: 'Choose a spot', text: 'In the new-session panel, <b>Choose another spot…</b> shows every free room on the floor; the floor buttons reach one floor beyond, up and down. Click one, then pick the folder.', focus: 'ghost' },
+      { title: 'Move a room', text: '<b>⇄</b> in a session\'s panel moves its room the same way. The session remembers its spot, so it stays there.', focus: 'room', openPanel: true, highlight: '#move' },
+    ],
+  },
+  sessions: {
+    name: 'Starting and ending sessions',
+    steps: [
+      { title: 'A new session', text: 'Click the dashed room, or open its panel: <b>Choose folder…</b> opens the system\'s folder dialog, then a Terminal starts Claude Code there. Its room appears once it starts.', focus: 'ghost' },
+      { title: 'Pick up where you left off', text: 'Tick <b>Continue the last conversation</b> to start it with <kbd>claude --continue</kbd>.', focus: 'ghost' },
+      { title: 'Ending one', text: '<b>⏻</b> in a session\'s panel asks first, then Claude says goodbye at the door and the session exits, as <kbd>/exit</kbd> does. Its conversation stays on disk.', openPanel: true, highlight: '#end' },
+    ],
+  },
+  hooks: {
+    name: 'Hooks and titles',
+    steps: [
+      { title: 'Hook events', text: 'Each chip at the top shows the last hook event its session raised: <span style="color:#E3B341">PreToolUse</span>, <span style="color:#3FB950">Stop</span>, <span style="color:#B48EAD">SubagentStart</span>… They fire whether or not you configured hooks, so you see where yours would run.', highlight: '#rooms' },
+      { title: 'All of them', text: 'A session\'s <b>Activity</b> tab lists its latest hook events; in its terminal, <kbd>/workshop hooks</kbd> counts every kind and says when each fires.', openPanel: true, highlight: '#panel .tabs .tab:nth-child(3)' },
+      { title: 'Titles', text: '<b>titles</b> has Haiku name each turn in a few words, on the room\'s sign and its chip. It asks before turning on, since it costs tokens.', highlight: '#titles' },
+    ],
+  },
+  terminal: {
+    name: 'In the terminal',
+    steps: [
+      { title: 'The pane', text: '<kbd>/workshop</kbd> in any session opens a pane with its own room in pixel art, the same agents at the same stations.', focus: null },
+      { title: 'Commands', text: '<kbd>/workshop hooks</kbd> the hook table, <kbd>/workshop 3d</kbd> this window, <kbd>/workshop 3d off</kbd> to stop it, <kbd>/workshop auto</kbd> to open the pane with every session, <kbd>/workshop help</kbd> for all of them.', focus: null },
+    ],
+  },
+}
+let tourName = 'main'
+const TOUR_DEMOS = {
+  permission: { id: 'demo', tool: 'Edit', detail: 'src/server.py', command: null, diff: "- return host == '127.0.0.1'\n+ return host == f'127.0.0.1:{port}'", plan: null, questions: null, canAlways: true, agent: 'main', until: 0 },
+  plan: { id: 'demo', tool: 'ExitPlanMode', detail: '', command: null, diff: null, plan: '## Plan\n1. Find where the host is checked\n2. Compare it with the port\n3. Run the tests', questions: null, canAlways: false, agent: 'main', until: 0 },
+  question: { id: 'demo', tool: 'AskUserQuestion', detail: '', command: null, diff: null, plan: null, questions: [{ question: 'Which test runner should I use?', header: 'Tests', options: [{ label: 'vitest', description: '' }, { label: 'jest', description: '' }], multiSelect: false }], canAlways: false, agent: 'main', until: 0 },
+}
+const SPOTS = {
+  room: [W / 2, D / 2, 4.5],
+  tray: [2.75, 1.0, 0.9],
+  edit: [BACK_XS[2], 1.3, 1.2],
+  door: [DOOR_X, 0.9, 1],
+  shell: [BACK_XS[0], 1.3, 1.2],
+  screen: [7, 1.5, 2.6],
+  flask: [13.2, 1.0, 0.9],
+  ghost: [W / 2, D / 2, 4.5],
+}
+const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.08, 48), new THREE.MeshBasicMaterial({ color: srgb(0xd97757), transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthTest: false }))
+ring.rotation.x = -Math.PI / 2
+ring.renderOrder = 12
+ring.visible = false
+scene.add(ring)
+let tourAt = -1
+let ringScale = 1
+const tourBox = document.getElementById('tour')
+function tourRoom() {
+  return [...rooms.values()].sort((a, b) => a.slot - b.slot)[0] ?? null
+}
+function showStep(i) {
+  const steps = TOURS[tourName].steps
+  tourAt = i
+  const step = steps[i]
+  document.getElementById('tour-step').textContent = TOURS[tourName].name + ' · ' + (i + 1) + ' / ' + steps.length
+  document.getElementById('tour-title').textContent = step.title
+  document.getElementById('tour-text').innerHTML = step.text
+  document.getElementById('tour-back').disabled = i === 0
+  document.getElementById('tour-next').textContent = i === steps.length - 1 ? 'Done' : 'Next'
+  document.getElementById('tour-never').hidden = tourName !== 'main'
+  tourBox.classList.add('open')
+  for (const lit of document.querySelectorAll('.glow')) lit.classList.remove('glow')
+  const room = step.focus === 'ghost' ? ghost : tourRoom()
+  ring.visible = false
+  if (step.focus && room) {
+    const [x, z, size] = SPOTS[step.focus]
+    if (room.place.level !== currentLevel) setLevel(room.place.level)
+    const spot = room.group.localToWorld(new THREE.Vector3(x, 0, z))
+    spot.y = room.place.level * FLOOR_H
+    ring.position.set(spot.x, spot.y + 0.04, spot.z)
+    ringScale = size * (step.ringScale ?? 1)
+    ring.visible = true
+    const far = step.focus === 'room' || step.focus === 'ghost' ? 1 : 0.55
+    const target = spot.clone().setY(spot.y + (step.focus === 'screen' ? 1.8 : 0.6))
+    const position = target.clone().add(new THREE.Vector3(room.place.normal.x * 17 * far, 13 * far, room.place.normal.z * 17 * far))
+    flight = { fromTarget: controls.target.clone(), fromPosition: camera.position.clone(), target, position, t: 0 }
+  }
+  const panelRoom = tourRoom()
+  if (step.openPanel && panelRoom) {
+    const id = [...rooms.entries()].find(([, one]) => one === panelRoom)?.[0]
+    if (id && selected !== id) openPanel(id)
+  } else if (selected !== null) {
+    closePanel()
+  }
+  // A made-up request, plan or question in the panel, to show what a real one looks like
+  if (step.demo && selected && parts.ask) {
+    const state = states.get(selected)
+    if (state) {
+      parts.ask.replaceChildren(askCard(state, TOUR_DEMOS[step.demo], false))
+      parts.keys.ask = 'demo'
+      parts.countdown.textContent = 'an example; nothing is asked'
+      parts.countdown.dataset.done = '1'
+    }
+  } else if (parts.keys?.ask === 'demo') {
+    parts.keys.ask = null
+    updatePanel()
+  }
+  if (step.type !== undefined && parts.prompt) {
+    parts.prompt.value = step.type
+    parts.prompt.focus()
+    parts.prompt.selectionStart = step.type.length
+    updateMenu()
+  }
+  if (step.highlight) setTimeout(() => document.querySelectorAll(step.highlight).forEach((one) => one.classList.add('glow')), 50)
+}
+function startTour(name) {
+  tourName = name
+  document.getElementById('tours').classList.remove('open')
+  document.getElementById('tour-never-box').checked = settings.tour === 'never'
+  showStep(0)
+}
+function endTour() {
+  if (tourAt < 0) return
+  tourAt = -1
+  ring.visible = false
+  tourBox.classList.remove('open')
+  for (const lit of document.querySelectorAll('.glow')) lit.classList.remove('glow')
+  if (parts.keys?.ask === 'demo') {
+    parts.keys.ask = null
+    updatePanel()
+  }
+  if (parts.prompt && (parts.prompt.value === '/' || parts.prompt.value === '@')) {
+    parts.prompt.value = ''
+    updateMenu()
+  }
+  // The main tour's own choice: show it again next time, or never
+  if (tourName === 'main' && CAN_SEND) {
+    const never = document.getElementById('tour-never-box').checked
+    if ((settings.tour === 'never') !== never) send({ session: '_window', type: 'set-tour', value: never ? 'never' : 'show' }).catch(() => {})
+    settings.tour = never ? 'never' : 'show'
+  }
+}
+// The ? menu: every tour, and whether the main one shows when the window opens
+const toursMenu = document.getElementById('tours')
+document.getElementById('help').onclick = () => {
+  toursMenu.replaceChildren(
+    ...Object.entries(TOURS).map(([name, tour]) => {
+      const item = el('button', { className: 'item', textContent: tour.name })
+      item.onclick = () => startTour(name)
+      return item
+    }),
+  )
+  if (CAN_SEND) {
+    const box = el('input', { type: 'checkbox', checked: settings.tour !== 'never' })
+    box.onchange = () => {
+      settings.tour = box.checked ? 'show' : 'never'
+      send({ session: '_window', type: 'set-tour', value: settings.tour }).catch(() => {})
+    }
+    toursMenu.append(el('label', { className: 'row note item' }, box, 'Show the main tour when the window opens'))
+  }
+  toursMenu.classList.toggle('open')
+}
+document.getElementById('tour-next').onclick = () => (tourAt === TOURS[tourName].steps.length - 1 ? endTour() : showStep(tourAt + 1))
+document.getElementById('tour-back').onclick = () => tourAt > 0 && showStep(tourAt - 1)
+document.getElementById('tour-skip').onclick = endTour
+window.addEventListener('keydown', (event) => {
+  if (tourAt < 0 || (event.target.closest && event.target.closest('input, textarea'))) return
+  if (event.key === 'Escape') endTour()
+  if (event.key === 'Enter') document.getElementById('tour-next').click()
+})
+// The window's settings, as the sessions keep them: whether the main tour shows by itself
+let settings = {}
+let settingsRead = false
+function readSettings() {
+  if (location.protocol !== 'http:') {
+    settingsRead = true
+    return
+  }
+  fetch('settings.json?' + Date.now(), { cache: 'no-store', headers: { 'X-Workshop-Token': TOKEN } })
+    .then((response) => (response.ok ? response.json() : {}))
+    .catch(() => ({}))
+    .then((read) => {
+      settings = { ...read, ...settings }
+      settingsRead = true
+    })
+}
+claimToken().finally(startReading)
+// The main tour shows by itself each time the window opens, once there is a room to show, until
+// the person says never
+let tourOffered = false
+function offerTour() {
+  if (tourOffered || rooms.size === 0 || !settingsRead) return
+  tourOffered = true
+  if (settings.tour !== 'never') setTimeout(() => tourAt < 0 && startTour('main'), 1200)
+}
+function tick(t) {
+  if (ring.visible) {
+    ring.scale.setScalar(ringScale * (1 + Math.sin(t * 4) * 0.08))
+    ring.material.opacity = 0.65 + Math.sin(t * 4) * 0.25
+  }
+  offerTour()
+}
+
+// Couriers: when one session's message reaches another, a small Claude in the sender's color
+// carries an envelope from its room, along the corridors and through the hall (by the lift between
+// floors) to the receiver's. The receiver only knows a message came, not from which session, so a
+// delivery is matched to a send by its words, else by time
+const couriers = []
+const seenMail = new Set()
+const pairedSends = new Set()
+const COURIER_SPEED = 6
+function roomIdOf(room) {
+  for (const [id, one] of rooms) if (one === room) return id
+  return null
+}
+function sameWords(a, b) {
+  const clean = (text) => text.replace(/\s+/g, ' ').trim().slice(0, 60)
+  return clean(a).length > 8 && (clean(b).includes(clean(a)) || clean(a).includes(clean(b)))
+}
+function watchMail(live) {
+  for (const state of live) {
+    for (const delivery of state.mailIn ?? []) {
+      if (seenMail.has(delivery.id)) continue
+      seenMail.add(delivery.id)
+      if (Date.now() - delivery.at > 30000) continue
+      const to = rooms.get(state.id)
+      if (!to) continue
+      let from = null
+      let send = null
+      for (const other of live) {
+        if (other.id === state.id) continue
+        for (const out of other.mailOut ?? []) {
+          if (pairedSends.has(out.id) || Math.abs(out.at - delivery.at) > 30000) continue
+          const isMatch = sameWords(out.text, delivery.text)
+          if (isMatch || (!send && !from)) {
+            from = other
+            send = out
+            if (isMatch) break
+          }
+        }
+        if (send && sameWords(send.text, delivery.text)) break
+      }
+      if (send) pairedSends.add(send.id)
+      sendCourier(from ? rooms.get(from.id) : null, to, from?.project ?? 'outside', state.project)
+    }
+  }
+}
+// The way from one room to another, in the world: out of the door, to the corridor, through the hall
+// (riding the lift between floors), down the other corridor and in
+function wayOf(room, isIn) {
+  const front = room.group.localToWorld(new THREE.Vector3(W / 2, 0, D + 0.4))
+  const inside = room.group.localToWorld(new THREE.Vector3(W / 2, 0, AISLE + 0.6))
+  const [ux] = ARMS[room.place.arm]
+  const corridor = ux !== 0 ? new THREE.Vector3(front.x, front.y, 0) : new THREE.Vector3(0, front.y, front.z)
+  return isIn ? [corridor, front, inside] : [inside, front, corridor]
+}
+// Where a corridor meets the hall: a point on a ring around the lift, so a courier passing through
+// walks around the shaft rather than into it
+const RING = 3.5
+function ringPoint(arm, y) {
+  const [ux, uz] = ARMS[arm]
+  return new THREE.Vector3(ux * RING, y, uz * RING)
+}
+// From one corridor to another on the same floor: straight along a shared corridor, else through
+// the hall by the ring; from the east to the west (or north to south) by a quarter round the side
+function hallWay(fromArm, toArm, y) {
+  if (fromArm === toArm) return []
+  const way = [ringPoint(fromArm, y)]
+  const [fx, fz] = ARMS[fromArm]
+  const [tx, tz] = ARMS[toArm]
+  if (fx === -tx && fz === -tz) way.push(new THREE.Vector3(fz !== 0 ? RING : 0, y, fx !== 0 ? RING : 0))
+  way.push(ringPoint(toArm, y))
+  return way
+}
+function sendCourier(fromRoom, toRoom, fromName, toName) {
+  const toY = toRoom.place.level * FLOOR_H
+  const path = []
+  if (fromRoom) {
+    const fromY = fromRoom.place.level * FLOOR_H
+    path.push(...wayOf(fromRoom, false))
+    if (fromY === toY) {
+      path.push(...hallWay(fromRoom.place.arm, toRoom.place.arm, toY))
+    } else {
+      // Another floor: to the lift, up or down, and out toward the receiver's corridor
+      path.push(ringPoint(fromRoom.place.arm, fromY), new THREE.Vector3(0, fromY, 0), new THREE.Vector3(0, toY, 0), ringPoint(toRoom.place.arm, toY))
+    }
+    const sender = fromRoom.agents.get('main')
+    if (sender) sender.note = { text: '📤 to ' + toName, until: frameClock.elapsedTime + 4 }
+  } else {
+    // From outside the building: up the lift
+    path.push(new THREE.Vector3(0, toY, 0), ringPoint(toRoom.place.arm, toY))
+  }
+  path.push(...wayOf(toRoom, true))
+  const color = fromRoom ? 0xd97757 : 0x9aa3ae
+  const body = material(color, { roughness: 0.65 })
+  const legs = [-0.2, 0.2].map((x) => block(0.12, 0.22, 0.12, body, x, 0, 0))
+  const envelope = group(block(0.5, 0.04, 0.34, material(0xf2efe6), 0, 0, 0), block(0.1, 0.05, 0.1, material(0xe5484d), 0, 0.02, 0))
+  envelope.position.y = 1.0
+  const g = group(block(0.7, 0.45, 0.45, body, 0, 0.22, 0), block(0.08, 0.14, 0.02, INK, -0.13, 0.5, 0.23), block(0.08, 0.14, 0.02, INK, 0.13, 0.5, 0.23), ...legs, envelope)
+  g.position.copy(path[0])
+  scene.add(g)
+  couriers.push({ group: g, legs, envelope, path, leg: 1, toRoom, note: '📨 from ' + fromName })
+}
+function moveCouriers(dt, t) {
+  for (const courier of [...couriers]) {
+    const target = courier.path[courier.leg]
+    const p = courier.group.position
+    const gap = new THREE.Vector3().subVectors(target, p)
+    const isLift = Math.abs(gap.y) > 0.01 && Math.abs(gap.x) + Math.abs(gap.z) < 0.01
+    const step = (isLift ? COURIER_SPEED * 0.6 : COURIER_SPEED) * dt
+    if (gap.length() <= step) {
+      p.copy(target)
+      courier.leg += 1
+      if (courier.leg >= courier.path.length) {
+        // Delivered: the receiver says so, and the courier goes
+        const main = courier.toRoom.agents.get('main')
+        if (main) main.note = { text: courier.note, until: t + 5 }
+        removeThing(courier.group)
+        couriers.splice(couriers.indexOf(courier), 1)
+      }
+      continue
+    }
+    p.addScaledVector(gap.normalize(), step)
+    if (!isLift) courier.group.rotation.y = Math.atan2(gap.x, gap.z)
+    courier.legs.forEach((leg, i) => (leg.position.y = isLift ? 0 : Math.max(0, Math.sin(t * 16 + i * Math.PI)) * 0.1))
+    courier.envelope.position.y = 1.0 + Math.sin(t * 8) * 0.04
+    // Seen only on the floor in view
+    courier.group.visible = Math.abs(p.y - currentLevel * FLOOR_H) < FLOOR_H * 0.6
+  }
+}
+
+const frameClock = new THREE.Clock()
+let syncedAt = 0
+function frame() {
+  requestAnimationFrame(frame)
+  const dt = Math.min(0.05, frameClock.getDelta())
+  const t = frameClock.elapsedTime
+  if (t - syncedAt > 0.1) {
+    syncedAt = t
+    syncRooms()
+  }
+  document.getElementById('offline').style.display = Date.now() - listedAt > OFFLINE_MS ? 'flex' : 'none'
+  for (const room of rooms.values()) {
+    if (room.place.level !== currentLevel) continue
+    for (const station of Object.values(room.stations)) {
+      station.group.tick(station.isBusy, t)
+      station.label.material.color.set(station.isBusy ? 0xffffff : 0x8a8a96)
+    }
+    // The main agent strolls about the rug now and then while nothing is happening
+    if (t > room.strollAt) {
+      room.strollAt = t + 5 + Math.random() * 4
+      const main = room.agents.get('main')
+      if (main && !main.state.station && !main.sleepy) main.stroll = { x: 3 + Math.random() * (W - 6), z: AISLE - 0.4 + Math.random() * 0.8, yaw: 0 }
+    }
+    let anyAtDoor = false
+    for (const agent of [...room.agents.values()]) {
+      const isMoving = walk(room, agent, dt, t)
+      const p = agent.group.position
+      if (!agent.state.isMain && Math.hypot(p.x - DOOR_X, p.z - 0.6) < 1.4) anyAtDoor = true
+      if (agent.gone && !isMoving) {
+        room.group.remove(agent.group)
+        room.agents.delete(agent.id)
+      }
+    }
+    room.doorPanel.material.color.copy(srgb(anyAtDoor ? 0xf3d9a4 : 0x7a5a3a))
+    room.doorPanel.material.emissive.copy(srgb(anyAtDoor ? 0x8a6a30 : 0x000000))
+    room.doorLight.visible = anyAtDoor
+    const state = states.get(idOf(room))
+    if (state) {
+      for (const agent of room.agents.values()) {
+        agent.cloud.visible = agent.state.isThinking === true
+        if (agent.cloud.visible) agent.cloud.material.map = CLOUDS[Math.floor(t * 3) % 3]
+        if (agent.delivery && ((!agent.walking && Math.abs(agent.group.position.x - 2.75) < 0.1 && Math.abs(agent.group.position.z - 1.35) < 0.1) || t > agent.delivery.until)) {
+          agent.delivery = null
+          agent.carried.visible = false
+          room.papersShown = room.answersSeen
+        }
+      }
+      sleep(room, state, t, dt)
+      drawPapers(room, state)
+      drawScreen(room, state, t)
+      drawSheet(room, state)
+      drawFlask(room, state, dt)
+    }
+  }
+  if (flight) {
+    flight.t = Math.min(1, flight.t + dt * 1.8)
+    const ease = 1 - Math.pow(1 - flight.t, 3)
+    controls.target.lerpVectors(flight.fromTarget, flight.target, ease)
+    camera.position.lerpVectors(flight.fromPosition, flight.position, ease)
+    if (flight.t === 1) flight = null
+  }
+  fold()
+  moveCouriers(dt, t)
+  liftCar.position.y += (currentLevel * FLOOR_H - liftCar.position.y) * Math.min(1, dt * 2.5)
+  tick(t)
+  walkView(dt)
+  if (!flight && tourAt < 0) clampView()
+  cutWalls()
+  controls.update()
+  sun.position.copy(controls.target).add(new THREE.Vector3(-6, 14, 10))
+  sun.target.position.copy(controls.target)
+  renderer.render(scene, camera)
+}
+{
+  const start = viewOf(placeOf(0))
+  controls.target.copy(start.target)
+  camera.position.copy(start.position)
+}
+frame()
+</script>
+</body>
+</html>

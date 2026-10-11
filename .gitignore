@@ -1,5 +1,5 @@
 # Types Claude Code generates when it loads a mod
-.claude-plugin/types/
+**/.claude-plugin/types/
 
 # macOS and editors
 .DS_Store
@@ -12,3 +12,10 @@
 .env
 .env.*
 node_modules/
+
+# Python
+__pycache__/
+*.pyc
+
+# Local Claude Code settings
+.claude/settings.local.json

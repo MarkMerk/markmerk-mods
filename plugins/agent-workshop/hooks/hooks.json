@@ -1,0 +1,4 @@
+{
+  "description": "The agent-workshop hooks module",
+  "modules": ["./register.js"]
+}

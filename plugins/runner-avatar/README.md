@@ -9,7 +9,7 @@ claude plugin marketplace add MarkMerk/markmerk-mods
 claude plugin install runner-avatar@markmerk-mods
 ```
 
-Commands: `/avatar` (hide/show), `/avatar mute|unmute`, `/avatar tennis`, `/avatar jump`.
+Commands: `/avatar` (hide/show), `/avatar mute|unmute`, `/avatar stay|roam`, `/avatar tennis`, `/avatar jump`.
 
 It makes no network calls and reads or writes no files. Full docs, demo and privacy notes:
 <https://github.com/MarkMerk/markmerk-mods#runner-avatar>

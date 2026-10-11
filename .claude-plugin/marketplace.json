@@ -1,6 +1,8 @@
 {
   "name": "markmerk-mods",
-  "owner": { "name": "MarkMerk" },
+  "owner": {
+    "name": "MarkMerk"
+  },
   "metadata": {
     "description": "Small mods for Claude Code"
   },
@@ -9,10 +11,34 @@
       "name": "runner-avatar",
       "source": "./plugins/runner-avatar",
       "description": "A small Claude avatar that runs back and forth above the prompt",
-      "version": "0.2.0",
-      "author": { "name": "MarkMerk" },
+      "version": "0.3.0",
+      "author": {
+        "name": "MarkMerk"
+      },
       "license": "MIT",
-      "keywords": ["avatar", "fun", "status", "ui"]
+      "keywords": [
+        "avatar",
+        "fun",
+        "status",
+        "ui"
+      ]
+    },
+    {
+      "name": "agent-workshop",
+      "source": "./plugins/agent-workshop",
+      "description": "A pixel-art workshop pane where Claude and its subagents walk between tool stations and work, with the hook events they raise",
+      "version": "0.1.0",
+      "author": {
+        "name": "MarkMerk"
+      },
+      "license": "MIT",
+      "keywords": [
+        "agents",
+        "hooks",
+        "pane",
+        "pixel-art",
+        "ui"
+      ]
     }
   ]
 }

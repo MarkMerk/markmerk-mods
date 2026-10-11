@@ -1,0 +1,19 @@
+{
+  "name": "agent-workshop",
+  "version": "0.1.0",
+  "description": "A pixel-art workshop pane where Claude and its subagents walk between tool stations and work, with the hook events they raise",
+  "author": {
+    "name": "MarkMerk"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/MarkMerk/markmerk-mods#agent-workshop",
+  "repository": "https://github.com/MarkMerk/markmerk-mods",
+  "keywords": [
+    "agents",
+    "hooks",
+    "3d",
+    "pixel-art",
+    "ui",
+    "sessions"
+  ]
+}

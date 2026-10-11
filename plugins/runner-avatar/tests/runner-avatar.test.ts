@@ -105,6 +105,54 @@ test('the avatar strolls, then follows a turn from start to finish', async ($, o
   expect(await ui.find({ key: 'tennis' })).toBeUndefined()
 })
 
+test('/avatar stay keeps the avatar in one spot, and /avatar roam lets it run again', async ($, on) => {
+  const clock = mock.clock(on)
+  on('session.start', (_$, e) => e)
+  on('ui.render', () => ({ type: 'Box', props: { key: 'empty' }, children: [] }))
+  on('ui.message', () => ({}))
+  on('command.register', () => ({ value: undefined }))
+  on('store.get', () => ({ value: undefined }))
+  const stored: Record<string, unknown> = {}
+  on('store.set', (_$, e) => {
+    stored[e.key] = e.value
+    return { value: undefined }
+  })
+  on('turn.start', (_$, e) => ({ turnId: e.turnId }))
+  await $.session.start({ cwd: '/tmp' })
+
+  const ui = await $.ui.mount(BAND)
+
+  // Let it stroll a little first, then pin it
+  await clock.advance(360)
+  await ui.redraw()
+  const spot = (await ui.drawn()).props.marginLeft
+  expect((await $.command.run({ command: 'avatar', args: 'stay' })).text).toBe('avatar stays put')
+  expect(stored.isPinned).toBe(true)
+
+  // Idle: no stroll
+  await clock.advance(360 * 4)
+  await ui.redraw()
+  expect((await ui.drawn()).props.marginLeft).toBe(spot)
+
+  // A turn: it runs on the spot, the legs move but the avatar doesn't
+  await $.turn.start({ text: 'hello', turnId: 't1' })
+  await clock.advance(120 * 10)
+  await ui.redraw()
+  const before = JSON.stringify(await ui.drawn())
+  expect((await ui.drawn()).props.marginLeft).toBe(spot)
+  await clock.advance(120)
+  await ui.redraw()
+  expect((await ui.drawn()).props.marginLeft).toBe(spot)
+  expect(JSON.stringify(await ui.drawn())).not.toBe(before)
+
+  // /avatar roam: it moves again
+  expect((await $.command.run({ command: 'avatar', args: 'roam' })).text).toBe('avatar roams')
+  expect(stored.isPinned).toBe(false)
+  await clock.advance(120 * 5)
+  await ui.redraw()
+  expect((await ui.drawn()).props.marginLeft).not.toBe(spot)
+})
+
 test('on the desktop the avatar and the court are drawings', async ($, on) => {
   mock.clock(on)
   on('session.start', (_$, e) => e)
