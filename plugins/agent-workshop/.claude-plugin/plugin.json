@@ -1,7 +1,7 @@
 {
   "name": "agent-workshop",
   "version": "0.1.0",
-  "description": "A pixel-art workshop pane where Claude and its subagents walk between tool stations and work, with the hook events they raise",
+  "description": "A workshop where Claude and its subagents walk between tool stations: a pixel-art pane in the terminal, and a 3D window with a room for every session, to watch, prompt and answer them. English and German",
   "author": {
     "name": "MarkMerk"
   },
@@ -14,6 +14,7 @@
     "3d",
     "pixel-art",
     "ui",
-    "sessions"
+    "sessions",
+    "german"
   ]
 }

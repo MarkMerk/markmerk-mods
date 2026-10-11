@@ -1,15 +1,28 @@
 # markmerk-mods
 
-A small [Claude Code](https://claude.com/claude-code) plugin marketplace. It holds two mods:
-**runner-avatar** and **agent-workshop**.
+A small [Claude Code](https://claude.com/claude-code) plugin marketplace with two mods:
+
+| Mod | What it is |
+| --- | --- |
+| [**runner-avatar**](#runner-avatar) | a small Claude avatar above your prompt that runs while Claude works and reacts to what it does |
+| [**agent-workshop**](#agent-workshop) | a workshop where Claude and its subagents walk between tool stations: a pixel-art pane in the terminal, and a 3D window with a room for every session, where you can prompt them and answer their permission requests. In English and German |
+
+## Install
+
+```sh
+claude plugin marketplace add MarkMerk/markmerk-mods
+claude plugin install runner-avatar@markmerk-mods
+claude plugin install agent-workshop@markmerk-mods
+```
+
+Then start a new Claude Code session. To update later, `claude plugin marketplace update markmerk-mods`;
+to remove a mod, `claude plugin uninstall <name>@markmerk-mods`.
 
 ## runner-avatar
 
 A small Claude avatar lives in the band above your prompt and reacts to what Claude is doing.
 
 ![runner-avatar: the avatar runs while Claude works, shows the current tool, celebrates when the turn ends, and plays tennis when idle](assets/runner-avatar.gif)
-
-### What it does
 
 | When | The avatar |
 | --- | --- |
@@ -25,8 +38,6 @@ A small Claude avatar lives in the band above your prompt and reacts to what Cla
 
 In the desktop app it is drawn as a vector image instead of block characters.
 
-### Commands
-
 | Command | Does |
 | --- | --- |
 | `/avatar` | hide or show the avatar |
@@ -40,137 +51,120 @@ Hide, mute and stay are remembered between sessions.
 
 ## agent-workshop
 
-A pane with a small pixel-art workshop where you can watch Claude and its subagents work. Open it with
-`/workshop`.
+Watch Claude and its subagents work, and use all your sessions from one window.
 
-- **The room** is drawn in a three-quarter view, like an old RPG: a back wall with a door and
-  windows, a wooden floor, furniture with height, and whatever stands nearer covering what is
-  behind it. It is drawn with half-block pixels, so it works in any terminal. It has six stations:
-  a desk with a monitor for `shell` (Bash), a bookshelf for `files` (Read, Grep, Glob), a writing
-  desk with a lamp for `edit` (Edit, Write), a radio for `web` (WebFetch, WebSearch), a server rack
-  for `mcp` (any MCP tool) and a round table with an orb for `agents` (Agent and the rest).
-- **Claude** walks to the station of each tool it calls, faces it and types; the station
-  comes alive (the screen scrolls, books slide out, the lamp lights, the rack blinks).
-  **Subagents** come in through the door as smaller figures in their own colors, work at their
-  stations and leave by the door when they finish. A bubble over each one shows what it is doing,
-  `?` while it waits for your permission, `oops` when a call fails, and `done ✓ 12s` at the end of
-  a turn.
+### The terminal pane
+
+`/workshop` opens a pane with a small pixel-art workshop.
+
+- **The room** is drawn in a three-quarter view, like an old RPG, with half-block pixels, so it
+  works in any terminal (the desktop app draws it as a picture; a pane too small for a room lists
+  the agents in words). It has six stations: a desk with a monitor for `shell` (Bash), a bookshelf
+  for `files` (Read, Grep, Glob), a writing desk with a lamp for `edit` (Edit, Write), a radio for
+  `web` (WebFetch, WebSearch), a server rack for `mcp` (any MCP tool) and a round table with an orb
+  for `agents` (Agent and the rest).
+- **Claude** walks to the station of each tool it calls, faces it and types, and the station
+  comes alive. **Subagents** come in through the door as smaller figures in their own colors and
+  leave the same way when they finish. A bubble over each says what it is doing: `?` while it
+  waits for your permission, `oops` when a call fails, `done ✓ 12s` at the end of a turn. Idle for
+  40 seconds, Claude dozes.
 - **Hooks**: the header names the last settings hook event that fired (`PreToolUse`,
   `SubagentStart`, `Stop`, …) and who raised it. Press `h` for a table of every hook event, how
   often it fired this session and when it fires; `f` goes back to the room. Hook events fire
   whether or not you have hooks configured, so you can see where a hook of yours would run.
 
-**In 3D, every session at once, and in your hands**: `/workshop 3d` opens a window (Chrome's app
-window when Chrome is installed, else your default browser) with real 3D, lighting and shadows,
-and a room for every Claude Code session running this mod, in any project.
+### The 3D window
 
-- **The building grows**: three rooms along one side of a corridor, then three facing them; then
-  more corridors from a hall in the middle (east, west, north, south, a plus); then floors above
-  and below. The floors are joined in the hall by a glass lift, whose car rides to the floor in
-  view, and by stairs up and down: click the stairs, or a floor button at the top, to change
-  floors, empty ones included (one beyond each way is always there). Each room has its project's name over
-  it and a lamp over its door: green while the session works, amber while it waits for you. The
-  wall between the camera and a room is cut away, so no room hides another.
-- **Move around** like a map: drag to move, right-drag to turn, scroll to zoom, arrows or WASD to
+`/workshop 3d` opens a window (Chrome's app window when Chrome is installed, else your default
+browser) with real 3D, lighting and shadows, and a room for every Claude Code session running
+this mod, in any project.
+
+**The building**
+- Three rooms along one side of a corridor, then three facing them; then corridors east, west,
+  north and south of a hall; then floors above and below, joined by a glass lift and stairs.
+  Click the stairs or a floor button at the top to change floors.
+- Each room has its project's name over it and a lamp over its door: green while the session
+  works, amber while it waits for you, red while it ends. The wall between the camera and a room
+  is cut away, so no room hides another.
+- Move around like a map: drag to move, right-drag to turn, scroll to zoom, arrows or WASD to
   walk. Click a session's chip at the top, or a room, to fly there.
-- **Use a session from the window**: clicking a room opens its panel, laid out like a chat. Type
-  a prompt and press Enter, and it is sent to that session at once (it starts when the session is
-  free; **Esc**, **×** or a click on the floor closes the panel). Type `/` for a menu of the session's slash commands (built-in, plugin and MCP), which run
-  as if typed in its terminal; `@` for a menu of the project's files; paste or drop files to
-  attach them (they are saved in the shared folder and their paths go with the prompt). The
-  header shows the model (click it to switch with `/model`) and the permission mode; **Stop** ends
-  the running turn. The **Chat** tab shows the conversation with the tools each answer used,
-  **Edits** each edit's diff, **Activity** the agents, tool calls and hook events, and the todo
+
+**What a room shows**
+- Claude and its subagents at the stations of the tools they call, as in the pane; a thought
+  cloud while an agent thinks; Claude napping on the rug, z's rising, when idle.
+- A screen on the back wall with the answer as it streams, or the model's thinking.
+- Finished answers carried to a tray by the door as sheets, thicker for longer answers; the
+  latest edit's diff hanging over the editing desk.
+- A flask that fills with the context window (amber from 60 %, red from 85 %), with what the
+  session has cost.
+- **Couriers**: when one session messages another (Claude's SendMessage tool), a small Claude
+  carries an envelope from the sender's room through the corridors (by the lift between floors)
+  into the receiver's.
+
+**Using a session from the window**: click a room to open its panel, laid out like a chat.
+- Type a prompt and press Enter: it goes to that session at once and starts when the session is
+  free. `/` opens a menu of the session's slash commands, which run as if typed in its terminal;
+  `@` a menu of the project's files; paste or drop files to attach them.
+- The header shows the model (click to switch it with `/model`) and the permission mode;
+  **Stop** ends the running turn. Tabs: **Chat** (the conversation with the tools each answer
+  used), **Edits** (each edit's diff), **Activity** (agents, tool calls, hook events); the todo
   list shows above them while there is one.
-- **Answer permission requests, plans and questions**: when a session asks for permission, its
-  panel shows what it wants to do (the command, or the edit's diff) with **Allow**, **Always
-  allow** (the rule the terminal would offer), **Allow + accept edits** (for edits, switching the
-  session to accept edits, the one way a plugin can change the permission mode) and **Deny**. A
-  plan from plan mode can be approved there, and Claude's multiple-choice questions answered. The
-  window gets 25 seconds to answer (two minutes for a plan or a question; a toast in the terminal
-  says so); after that the terminal asks as usual.
-- **Start a new session**: on the floor in view, the first free room on every side of every
-  corridor is a dashed **+ new session**. Its panel has a **Choose folder…** button, which opens
-  the system's folder dialog, a list of **recent projects** (the folders sessions ran in, from
-  Claude Code's history) and a field for any folder; a Terminal window then opens running
-  `claude` in the
-  folder you chose, or `claude --continue` to pick up its last conversation (macOS); its room
-  appears once it starts. **Choose another spot…** shows every free room on the floor, any
-  corridor, either side, and the floor buttons reach a floor above and below: the session's room
-  goes where you click. **⇄** in a session's panel moves its room the same way, and the session
-  remembers its spot. The Terminal is opened with a small `.command` script rather than by
-  scripting Terminal, so it works from sessions in Claude's desktop app too, where macOS may not
-  let an app drive Finder or Terminal; there the folder dialog may not open, and the window says
-  so and offers the recent projects.
-- **Guests**: sessions running on this machine without the mod (started before it was set up)
-  get rooms too, in a look of their own (deep-water walls, a teal rug, a velvet rope across the
-  front, a 👁 guest sign), read from their processes and transcripts: their Claude goes to the
-  station of the tool it is running, the screen shows its latest answer, and the panel its chat
-  and tool calls. They are to watch only; restarting one with `claude --continue` (or trying
-  `/reload-plugins` in it) makes it a room of its own.
-- **Couriers between sessions**: sessions can message each other (Claude's SendMessage tool).
-  When one does, a small Claude carries an envelope out of the sender's room, along the corridors
-  and through the hall (by the lift between floors) into the receiver's, and each says so in a
-  bubble. The receiver is not told which session wrote, so the window matches a delivery to a
-  send by its words, else by its time; a message from outside the building comes up the lift.
-- **⏻ ends a session**: it asks first, then Claude says goodbye at the door and the session exits
-  as `/exit` does; the room folds away (as it does for a session closed in its terminal).
-- **Tours**: the main tour shows each time the window opens until you tick **Don't show this
-  again**; the **?** menu has it and shorter tours on the panel, slash commands and files,
-  permissions, reading a room, building, starting and ending sessions, hooks and titles, and the
-  terminal pane, with the parts they talk about lit up.
-- **Sleep**: a session idle for 40 seconds has its Claude lie down on the rug, eyes shut, z's
-  rising; it wakes at the first work. In the terminal pane it dozes too.
-- **See what the model writes**: a screen on each room's back wall shows the answer as it
-  streams, or what the model is thinking, and a thought cloud floats over an agent while it thinks.
-  The panel's **Output** tab shows the answer as it streams, as Markdown, and the answers before
-  it with the prompts they answered; **Edits** shows each edit's diff; **Activity** the agents,
-  tool calls and hook events.
-- **Finished answers pile up**: at the end of each turn the agent carries a sheet to the tray by
-  the door, thicker for a longer answer. After an edit, its diff hangs over the editing desk for a
-  while.
-- **Context and cost**: a flask in each room fills as the context window does (amber from 60 %,
-  red from 85 %, and it drains after a compaction), with the percent and what the session has cost.
-- **Turn titles** (off by default): the **titles** switch at the top asks first, then has every
-  session send each prompt to Haiku for a 3–6 word title, shown on the room's sign and its chip.
-  That is one small extra request a turn, and it costs tokens.
+- **Permission requests, plans and questions** show in the panel with what the session wants to
+  do (the file, the command, the edit's diff): **Allow**, **Always allow** (the rule the terminal
+  would offer, listed), **Allow + accept edits**, **Deny**; plans from plan mode can be approved
+  and Claude's multiple-choice questions answered. The window gets 25 seconds (two minutes for a
+  plan or a question); then the terminal asks as usual.
 
-`/workshop 3d off` closes it down.
+**Starting, moving and ending sessions**
+- On the floor in view, the first free room on every side of every corridor is a dashed
+  **+ new session**: pick a folder (the system's dialog, a recent project, or a path), and a
+  Terminal window opens running `claude` there, or `claude --continue` (macOS). **Choose another
+  spot…** puts its room wherever you click, on any floor.
+- **⇄** in a session's panel moves its room; the session remembers its spot.
+- **⏻** ends a session after asking: Claude waves goodbye at the door, the session exits as
+  `/exit` does, and the room folds away.
 
-How it works: the session that opened the window runs a small server, `web/server.py` (needs
-`python3`), on `127.0.0.1` only, and beats a heartbeat into `~/.claude/agent-workshop/`. Every
-session that sees the heartbeat writes its state there (`sessions/<id>.js`) a few times a second
-and reads the commands the window leaves for it (`inbox/<id>/`). Commands need a random token that
-only the page gets from the server, so no other web page or program can send them. Without
-`python3` the window opens as a file and can only watch. With no window open, nothing is written.
+**Guests**: sessions running on this machine without the mod (started before it was set up) get
+rooms too, in a look of their own (deep-water walls, a teal rug, a velvet rope, a 👁 guest sign),
+read from their processes and transcripts. They are to watch only; restarting one with
+`claude --continue` makes it a room of its own.
 
-The desktop app draws the pane's room as a picture; a pane too small for a room lists the agents
-in words instead.
+**Tours**: the main tour shows each time the window opens until you tick **Don't show this
+again**; the **?** menu has it and shorter tours on each part, with what they talk about lit up.
+
+**Turn titles** (off by default): the **titles** switch at the top asks first, then has every
+session send each prompt to Haiku for a 3–6 word title, shown on the room's sign. That is one
+small extra request a turn, and it costs tokens.
+
+### Language
+
+The workshop speaks English and German. **EN/DE** at the top of the window, or `/workshop lang de`
+(`lang en`) in any session, switches the window, its tours and the terminal pane together; every
+session shares the choice. Until one is made, the window follows the browser's language.
+
+### Commands
 
 | Command | Does |
 | --- | --- |
 | `/workshop` | open the pane |
 | `/workshop hooks` · `/workshop floor` | open it on the hooks table or the room |
 | `/workshop close` | close it |
-| `/workshop 3d` · `/workshop 3d off` | open every session in 3D in a window of its own, to watch and use them, or close it down |
+| `/workshop 3d` · `/workshop 3d off` | open the 3D window, or close it down |
+| `/workshop lang de` · `/workshop lang en` | German or English, here and in the window |
 | `/workshop clear` | reset the hook counts |
-| `/workshop auto` | open it with every session (on terminals 144 columns or wider), or stop that |
+| `/workshop auto` | open the pane with every session (on terminals 144 columns or wider), or stop that |
+| `/workshop help` | all of the above |
 
-## Install
+### Requirements and how it works
 
-```sh
-claude plugin marketplace add MarkMerk/markmerk-mods
-claude plugin install runner-avatar@markmerk-mods
-claude plugin install agent-workshop@markmerk-mods
-```
+The pane needs nothing. The 3D window needs `python3` to send commands (without it, the window
+opens as a file and can only watch); starting sessions and the folder dialog are macOS only.
 
-Then start a new Claude Code session. To update later:
-
-```sh
-claude plugin marketplace update markmerk-mods
-```
-
-To remove it: `claude plugin uninstall runner-avatar@markmerk-mods`.
+The session that opens the window runs a small server, `web/server.py`, on `127.0.0.1` only.
+While a window is in use, every session with the mod writes its state into
+`~/.claude/agent-workshop/` a few times a second and reads the commands the window leaves for it
+there. Commands need a random token that only the page gets from the server. With no window
+open, nothing is written. The details are below.
 
 ## Privacy and security
 
@@ -246,17 +240,31 @@ plugins/runner-avatar/
 ├── hooks/register.js               moods, tennis, /avatar, chime
 ├── hooks/sprite.js                 draws the avatar and catches clicks
 ├── sounds/done.aiff                the end-of-turn chime
-└── tests/runner-avatar.test.ts     run with: claude plugin test plugins/runner-avatar
+└── tests/runner-avatar.test.ts
 plugins/agent-workshop/
 ├── .claude-plugin/plugin.json      name, version, description
 ├── README.md                       short readme for the plugin itself
 ├── hooks/hooks.json                points at register.js
-├── hooks/register.js               agents, hook counts, /workshop, the pane
+├── hooks/register.js               agents, hook counts, /workshop, the pane, the sessions' shared state
 ├── hooks/scene.js                  the pixel art: room, stations, agents
-├── web/workshop.html               the 3D window (three.js)
+├── hooks/words.js                  the terminal side's German
+├── web/workshop.html               the 3D window (three.js), with its own German
 ├── web/server.py                   its server: the page, the state, the commands, behind a token
-├── tests/agent-workshop.test.ts    run with: claude plugin test plugins/agent-workshop
-└── tests/test_server.py            the server's own: python3 -m unittest discover -s tests
+├── tests/agent-workshop.test.ts
+└── tests/test_server.py
+```
+
+## Development
+
+Load the mods from this checkout instead of the marketplace with
+`claude --plugin-dir plugins/runner-avatar --plugin-dir plugins/agent-workshop`, and run
+`/reload-plugins` after a change. Checks:
+
+```sh
+claude plugin validate plugins/agent-workshop
+claude plugin test plugins/runner-avatar
+claude plugin test plugins/agent-workshop
+cd plugins/agent-workshop && python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
 ## License
