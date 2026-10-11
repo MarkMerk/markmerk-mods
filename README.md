@@ -53,6 +53,11 @@ Hide, mute and stay are remembered between sessions.
 
 Watch Claude and its subagents work, and use all your sessions from one window.
 
+![agent-workshop: a 3D building with a room for every Claude Code session; subagents come in through the door, a courier carries a message between sessions, and Claude naps when idle](assets/agent-workshop.gif)
+
+▶ [The full one-minute tour, as a video](assets/agent-workshop-demo.mp4): rooms, subagents, thinking and writing,
+the answer pile, couriers, floors, permissions from the window, new sessions and the nap.
+
 ### The terminal pane
 
 `/workshop` opens a pane with a small pixel-art workshop.
@@ -232,7 +237,9 @@ does more:
 
 ```
 .claude-plugin/marketplace.json     the catalog Claude Code reads
-assets/runner-avatar.gif            the demo above
+assets/runner-avatar.gif            the runner-avatar demo above
+assets/agent-workshop.gif           the agent-workshop highlights above
+assets/agent-workshop-demo.mp4      its full one-minute video
 plugins/runner-avatar/
 ├── .claude-plugin/plugin.json      name, version, description
 ├── README.md                       short readme for the plugin itself
