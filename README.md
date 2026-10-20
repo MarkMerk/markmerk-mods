@@ -36,7 +36,7 @@ A small Claude avatar lives in the band above your prompt and reacts to what Cla
 | Context is 85 % full or more | turns red |
 | You click it | hops |
 
-In the desktop app it is drawn as a vector image instead of block characters.
+In the desktop app and in VS Code it is drawn as a vector image instead of block characters.
 
 | Command | Does |
 | --- | --- |

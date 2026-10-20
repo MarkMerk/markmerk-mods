@@ -2,7 +2,8 @@
 
 A small Claude avatar that lives above your prompt and reacts to what Claude is doing: it runs while
 Claude works, shows the current tool, flinches when a tool fails, celebrates when the turn ends,
-chimes after long turns, and plays tennis when things are quiet.
+chimes after long turns, and plays tennis when things are quiet. Works in the terminal, the desktop
+app and VS Code.
 
 ```sh
 claude plugin marketplace add MarkMerk/markmerk-mods

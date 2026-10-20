@@ -181,3 +181,18 @@ test('on the desktop the avatar and the court are drawings', async ($, on) => {
   expect(court).toContain('<svg')
   expect(court).toContain('<circle')
 })
+
+test('in VS Code the avatar is a drawing too', async ($, on) => {
+  mock.clock(on)
+  on('session.start', (_$, e) => e)
+  on('ui.render', () => ({ type: 'Box', props: { key: 'empty' }, children: [] }))
+  on('command.register', () => ({ value: undefined }))
+  on('store.get', () => ({ value: undefined }))
+  on('store.set', () => ({ value: undefined }))
+  await $.session.start({ cwd: '/tmp' })
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'vscode' })
+  const idle = JSON.stringify(await ui.drawn())
+  expect(idle).toContain('<svg')
+  expect(idle).not.toContain('sprite.js')
+})

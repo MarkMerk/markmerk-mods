@@ -507,8 +507,9 @@ export function register(on) {
     columns = e.props.bodyColumns
     isWorking = e.props.isWorking
     const { Box, Text, Client, Svg } = $.ui.resolve(e)
-    // The desktop app gets drawings, the terminal block characters
-    const isDrawn = e.surface === 'desktop'
+    // The terminal gets block characters in a region of its own; the other surfaces (desktop,
+    // VS Code, mobile) get drawings, and VS Code and mobile have no such region to draw in
+    const isDrawn = e.surface !== 'terminal'
 
     const spriteColor = contextPercent !== null && contextPercent >= HOT_PERCENT ? HOT_COLOR : COLOR
     // A game of tennis: a court as wide as the band allows, a net in the middle, a player at each
