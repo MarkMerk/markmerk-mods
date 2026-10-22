@@ -11,7 +11,7 @@
       "name": "runner-avatar",
       "source": "./plugins/runner-avatar",
       "description": "A small Claude avatar that runs back and forth above the prompt",
-      "version": "0.3.0",
+      "version": "1.0.0",
       "author": {
         "name": "MarkMerk"
       },
