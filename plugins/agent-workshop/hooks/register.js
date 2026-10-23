@@ -965,6 +965,9 @@ async function askWindow($, e) {
 // and other tools' text scanned for the folder's name or the server's address. The settings'
 // own deny rules, which the engine enforces, are the stronger fence (see the README)
 const PATH_FIELDS = ['file_path', 'notebook_path', 'path']
+// The file tools reach only where their paths say, so the text they read, write or search for is
+// theirs to have: a README may name the folder
+const FILE_TOOLS = new Set(['Read', 'Write', 'Edit', 'MultiEdit', 'NotebookEdit', 'Grep'])
 function plainPath(path, home) {
   let full = String(path).replace(/^~(?=\/|$)/, home).replace(/^\$\{?HOME\}?(?=\/|$)/, home)
   if (!full.startsWith('/')) full = (self.cwd || home) + '/' + full
@@ -995,6 +998,7 @@ async function touchesShared($, e) {
     const real = await $.fs.stat(plain, { resolve: true }).then((stat) => stat.realPath).catch(() => null)
     if (typeof real === 'string' && inside(real.toLowerCase())) return true
   }
+  if (FILE_TOOLS.has(String(e.tool))) return false
   // Text anywhere in the call: commands, scripts, MCP arguments, URLs. The folder's name however
   // split or quoted, a path into it, a wildcard under ~/.claude, a `cd` there followed by more,
   // or the window server's address

@@ -1,6 +1,6 @@
 {
   "name": "agent-workshop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A workshop where Claude and its subagents walk between tool stations: a pixel-art pane in the terminal, and a 3D window with a room for every session, to watch, prompt and answer them. English and German",
   "author": {
     "name": "MarkMerk"
